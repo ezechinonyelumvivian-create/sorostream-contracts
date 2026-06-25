@@ -1,12 +1,31 @@
-use soroban_sdk::{Address, Env, Symbol, Vec};
 use crate::types::Stream;
+use soroban_sdk::{Address, Env, Symbol, Vec};
 
 const STREAM_ID_KEY: &str = "next_id";
+const ADMIN_KEY: &str = "admin";
+
+/// Stores the contract admin address.
+pub fn set_admin(env: &Env, admin: &Address) {
+    env.storage()
+        .instance()
+        .set(&Symbol::new(env, ADMIN_KEY), admin);
+}
+
+/// Loads the contract admin address.
+pub fn get_admin(env: &Env) -> Option<Address> {
+    env.storage().instance().get(&Symbol::new(env, ADMIN_KEY))
+}
 
 /// Returns and increments the global stream ID counter.
 pub fn next_stream_id(env: &Env) -> u64 {
-    let id: u64 = env.storage().instance().get(&Symbol::new(env, STREAM_ID_KEY)).unwrap_or(0u64);
-    env.storage().instance().set(&Symbol::new(env, STREAM_ID_KEY), &(id + 1));
+    let id: u64 = env
+        .storage()
+        .instance()
+        .get(&Symbol::new(env, STREAM_ID_KEY))
+        .unwrap_or(0u64);
+    env.storage()
+        .instance()
+        .set(&Symbol::new(env, STREAM_ID_KEY), &(id + 1));
     id
 }
 

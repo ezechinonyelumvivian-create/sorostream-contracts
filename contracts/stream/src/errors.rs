@@ -19,4 +19,8 @@ pub enum StreamError {
     InvalidDuration = 6,
     /// Contract has insufficient token balance.
     InsufficientBalance = 7,
+    /// Contract is already initialised (admin already set).
+    AlreadyInitialized = 8,
+    /// Contract has not been initialised yet.
+    NotInitialized = 9,
 }
