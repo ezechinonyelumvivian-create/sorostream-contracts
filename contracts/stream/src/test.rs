@@ -40,7 +40,7 @@ fn test_create_stream_success() {
     let t = setup();
     let c = client(&t);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
     assert_eq!(stream_id, 0);
 
     let stream = c.get_stream(&stream_id);
@@ -55,7 +55,7 @@ fn test_withdraw_partial() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
 
     t.env.ledger().set_timestamp(500);
     c.withdraw(&stream_id, &t.recipient);
@@ -70,7 +70,7 @@ fn test_withdraw_full() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
 
     t.env.ledger().set_timestamp(1000);
     c.withdraw(&stream_id, &t.recipient);
@@ -88,13 +88,12 @@ fn test_cancel_stream_splits_correctly() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
 
     t.env.ledger().set_timestamp(300);
     c.cancel_stream(&stream_id, &t.sender);
 
     let recipient_bal = TokenClient::new(&t.env, &t.token_id).balance(&t.recipient);
-    // sender started with 1_000_000, deposited 100_000, gets 70_000 back = 970_000
     let sender_bal = TokenClient::new(&t.env, &t.token_id).balance(&t.sender);
 
     assert_eq!(recipient_bal, 30_000);
@@ -110,7 +109,7 @@ fn test_top_up_extends_duration() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
     let stream_before = c.get_stream(&stream_id);
 
     c.top_up(&stream_id, &t.sender, &50_000);
@@ -131,15 +130,13 @@ fn test_auto_renew_restarts_on_completion() {
     let sender = Address::generate(&env);
     let recipient = Address::generate(&env);
 
-    // Mint enough for initial deposit + one renewal
     StellarAssetClient::new(&env, &token_id).mint(&sender, &200_000);
 
     let c = SoroStreamContractClient::new(&env, &contract_id);
     env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&sender, &recipient, &token_id, &100_000, &1000, &true);
+    let stream_id = c.create_stream(&sender, &recipient, &token_id, &100_000, &1000, &0, &true);
 
-    // Withdraw at end_time — triggers auto-renew re-lock from sender
     env.ledger().set_timestamp(1000);
     c.withdraw(&stream_id, &recipient);
 
@@ -155,7 +152,7 @@ fn test_cannot_withdraw_if_not_recipient() {
     let t = setup();
     let c = client(&t);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
     let other = Address::generate(&t.env);
 
     let result = c.try_withdraw(&stream_id, &other);
@@ -167,7 +164,7 @@ fn test_cannot_cancel_if_not_sender() {
     let t = setup();
     let c = client(&t);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
     let other = Address::generate(&t.env);
 
     let result = c.try_cancel_stream(&stream_id, &other);
@@ -179,7 +176,7 @@ fn test_zero_amount_fails() {
     let t = setup();
     let c = client(&t);
 
-    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &0, &1000, &false);
+    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &0, &1000, &0, &false);
     assert!(result.is_err());
 }
 
@@ -189,94 +186,79 @@ fn test_get_claimable_calculates_correctly() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
 
     t.env.ledger().set_timestamp(250);
     let claimable = c.get_claimable(&stream_id);
     assert_eq!(claimable, 25_000);
 }
 
-// ── transfer_recipient tests ──────────────────────────────────────────────────
+// ── Cliff tests ──────────────────────────────────────────────────────────────
 
-/// Happy path: current recipient transfers to a new wallet; subsequent withdraw
-/// routes tokens to the new address.
+/// Stream: duration=1000s, cliff=500s, flow_rate=100 stroops/s
+/// At t=499 (pre-cliff) → claimable must be 0.
 #[test]
-fn test_transfer_recipient_and_withdraw() {
+fn test_cliff_pre_cliff_returns_zero() {
     let t = setup();
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    // cliff at t=500, end at t=1000
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &false);
 
-    let new_recipient = Address::generate(&t.env);
-    c.transfer_recipient(&stream_id, &new_recipient);
+    t.env.ledger().set_timestamp(499);
+    assert_eq!(c.get_claimable(&stream_id), 0);
+}
 
-    // Stream now points to new_recipient.
-    let stream = c.get_stream(&stream_id);
-    assert_eq!(stream.recipient, new_recipient);
+/// At the exact cliff timestamp → claimable reflects time from last_withdraw_time.
+/// last_withdraw_time = start = 0, cliff = 500, so elapsed = 500 → 500 * 100 = 50_000.
+#[test]
+fn test_cliff_at_cliff_returns_accrued() {
+    let t = setup();
+    let c = client(&t);
+    t.env.ledger().set_timestamp(0);
 
-    // Withdraw at t=500 — tokens go to new_recipient, not old one.
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &false);
+
     t.env.ledger().set_timestamp(500);
-    c.withdraw(&stream_id, &new_recipient);
-
-    let new_bal = TokenClient::new(&t.env, &t.token_id).balance(&new_recipient);
-    let old_bal = TokenClient::new(&t.env, &t.token_id).balance(&t.recipient);
-    assert_eq!(new_bal, 50_000);
-    assert_eq!(old_bal, 0);
+    assert_eq!(c.get_claimable(&stream_id), 50_000);
 }
 
-/// Unauthorized party cannot transfer the recipient.
+/// Post-cliff linear: at t=750, elapsed from start = 750 → 75_000 total accrued.
 #[test]
-#[should_panic]
-fn test_transfer_recipient_unauthorized_fails() {
-    // Use a non-mocked env so require_auth actually enforces signatures.
-    let env = Env::default();
-    let contract_id = env.register(SoroStreamContract, ());
-    let token_admin = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(token_admin.clone()).address();
-    let sender = Address::generate(&env);
-    let recipient = Address::generate(&env);
-    let attacker = Address::generate(&env);
-
-    StellarAssetClient::new(&env, &token_id).mint(&sender, &100_000);
-
-    let c = SoroStreamContractClient::new(&env, &contract_id);
-
-    // Use mock_all_auths only for setup calls.
-    env.mock_all_auths();
-    let stream_id = c.create_stream(&sender, &recipient, &token_id, &100_000, &1000, &false);
-    // Clear mocked auths so the next call is unauthenticated.
-    env.set_auths(&[]);
-
-    let new_wallet = Address::generate(&env);
-    let _ = (attacker, stream_id);
-    // Calling without any auth on the recipient should panic.
-    c.transfer_recipient(&stream_id, &new_wallet);
-}
-
-/// same-recipient rejection.
-#[test]
-fn test_transfer_recipient_same_address_fails() {
-    let t = setup();
-    let c = client(&t);
-
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
-
-    let result = c.try_transfer_recipient(&stream_id, &t.recipient);
-    assert!(result.is_err());
-}
-
-/// transfer_recipient on a cancelled stream must fail.
-#[test]
-fn test_transfer_recipient_inactive_stream_fails() {
+fn test_cliff_post_cliff_linear() {
     let t = setup();
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
-    c.cancel_stream(&stream_id, &t.sender);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &false);
 
-    let new_recipient = Address::generate(&t.env);
-    let result = c.try_transfer_recipient(&stream_id, &new_recipient);
+    t.env.ledger().set_timestamp(750);
+    assert_eq!(c.get_claimable(&stream_id), 75_000);
+}
+
+/// Withdraw while pre-cliff transfers nothing; balance stays 0.
+#[test]
+fn test_cliff_withdraw_pre_cliff_transfers_nothing() {
+    let t = setup();
+    let c = client(&t);
+    t.env.ledger().set_timestamp(0);
+
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &false);
+
+    t.env.ledger().set_timestamp(300);
+    c.withdraw(&stream_id, &t.recipient);
+
+    let balance = TokenClient::new(&t.env, &t.token_id).balance(&t.recipient);
+    assert_eq!(balance, 0);
+}
+
+/// cliff_seconds > duration_seconds must fail with InvalidCliff.
+#[test]
+fn test_cliff_exceeds_duration_fails() {
+    let t = setup();
+    let c = client(&t);
+
+    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &1001, &false);
     assert!(result.is_err());
 }

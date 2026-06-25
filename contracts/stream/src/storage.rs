@@ -47,3 +47,15 @@ pub fn get_ids_by_recipient(env: &Env, recipient: &Address) -> Vec<u64> {
     let key = (Symbol::new(env, "r"), recipient.clone());
     env.storage().temporary().get(&key).unwrap_or(Vec::new(env))
 }
+
+/// Returns true if this (sender, nonce) pair has already been used.
+pub fn nonce_used(env: &Env, sender: &Address, nonce: u64) -> bool {
+    let key = (Symbol::new(env, "n"), sender.clone(), nonce);
+    env.storage().persistent().has(&key)
+}
+
+/// Records a (sender, nonce) pair as used.
+pub fn mark_nonce_used(env: &Env, sender: &Address, nonce: u64) {
+    let key = (Symbol::new(env, "n"), sender.clone(), nonce);
+    env.storage().persistent().set(&key, &true);
+}

@@ -54,15 +54,17 @@ pub fn stream_completed(env: &Env, stream_id: u64) {
     );
 }
 
-/// Emitted when a stream's recipient is transferred to a new address.
-pub fn stream_recipient_transferred(
+/// Emitted when a sender partially cancels a stream, spawning a new smaller stream.
+pub fn stream_partial_cancelled(
     env: &Env,
-    stream_id: u64,
-    old_recipient: &Address,
-    new_recipient: &Address,
+    old_stream_id: u64,
+    new_stream_id: u64,
+    sender: &Address,
+    refund_amount: i128,
+    new_deposit: i128,
 ) {
     env.events().publish(
-        (Symbol::new(env, "RecipientTransferred"), stream_id),
-        (old_recipient.clone(), new_recipient.clone()),
+        (Symbol::new(env, "StreamPartialCancelled"), old_stream_id),
+        (new_stream_id, sender.clone(), refund_amount, new_deposit),
     );
 }
