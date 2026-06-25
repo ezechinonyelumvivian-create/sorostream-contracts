@@ -94,7 +94,6 @@ fn test_cancel_stream_splits_correctly() {
     c.cancel_stream(&stream_id, &t.sender);
 
     let recipient_bal = TokenClient::new(&t.env, &t.token_id).balance(&t.recipient);
-    // sender started with 1_000_000, deposited 100_000, gets 70_000 back = 970_000
     let sender_bal = TokenClient::new(&t.env, &t.token_id).balance(&t.sender);
 
     assert_eq!(recipient_bal, 30_000);
@@ -131,7 +130,6 @@ fn test_auto_renew_restarts_on_completion() {
     let sender = Address::generate(&env);
     let recipient = Address::generate(&env);
 
-    // Mint enough for initial deposit + one renewal
     StellarAssetClient::new(&env, &token_id).mint(&sender, &200_000);
 
     let c = SoroStreamContractClient::new(&env, &contract_id);
@@ -139,7 +137,6 @@ fn test_auto_renew_restarts_on_completion() {
 
     let stream_id = c.create_stream(&sender, &recipient, &token_id, &100_000, &1000, &0, &true);
 
-    // Withdraw at end_time — triggers auto-renew re-lock from sender
     env.ledger().set_timestamp(1000);
     c.withdraw(&stream_id, &recipient);
 

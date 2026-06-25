@@ -14,7 +14,7 @@ use soroban_sdk::{
 };
 use storage::{
     get_ids_by_recipient, get_ids_by_sender, index_by_recipient, index_by_sender,
-    load_stream, next_stream_id, save_stream,
+    load_stream, mark_nonce_used, next_stream_id, nonce_used, save_stream,
 };
 use types::{Stream, StreamStatus};
 
@@ -49,6 +49,9 @@ impl SoroStreamContract {
     ) -> Result<u64, StreamError> {
         sender.require_auth();
 
+        if nonce_used(&env, &sender, nonce) {
+            return Err(StreamError::DuplicateStream);
+        }
         if amount <= 0 {
             return Err(StreamError::ZeroAmount);
         }
@@ -58,6 +61,8 @@ impl SoroStreamContract {
         if cliff_seconds > duration_seconds {
             return Err(StreamError::InvalidCliff);
         }
+
+        mark_nonce_used(&env, &sender, nonce);
 
         let flow_rate = amount / duration_seconds as i128;
         let now = env.ledger().timestamp();
