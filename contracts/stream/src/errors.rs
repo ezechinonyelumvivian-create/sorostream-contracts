@@ -19,4 +19,6 @@ pub enum StreamError {
     InvalidDuration = 6,
     /// Contract has insufficient token balance.
     InsufficientBalance = 7,
+    /// cancel_amount exceeds the unstreamed remainder or leaves too little to form a new stream.
+    InvalidPartialCancel = 8,
 }

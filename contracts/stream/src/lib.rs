@@ -184,6 +184,110 @@ impl SoroStreamContract {
         Ok(())
     }
 
+    /// Partially cancels an active stream by reclaiming `cancel_amount` from the unstreamed
+    /// remainder. The recipient receives all currently earned tokens. A new stream is created
+    /// with the leftover deposit (`remaining - cancel_amount`) at the same flow_rate, and
+    /// `cancel_amount` is refunded to the sender. The original stream is marked Cancelled.
+    ///
+    /// # Arguments
+    /// * `stream_id` - The stream to partially cancel.
+    /// * `sender` - Must match the stream's sender (auth required).
+    /// * `cancel_amount` - Tokens to reclaim from the unstreamed balance.
+    ///
+    /// # Returns
+    /// The new stream ID carrying the leftover deposit.
+    pub fn partial_cancel_stream(
+        env: Env,
+        stream_id: u64,
+        sender: Address,
+        cancel_amount: i128,
+    ) -> Result<u64, StreamError> {
+        sender.require_auth();
+
+        let mut stream = load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)?;
+
+        if stream.sender != sender {
+            return Err(StreamError::NotSender);
+        }
+        if stream.status != StreamStatus::Active {
+            return Err(StreamError::StreamNotActive);
+        }
+        if cancel_amount <= 0 {
+            return Err(StreamError::ZeroAmount);
+        }
+
+        let now = env.ledger().timestamp();
+        let effective_now = now.min(stream.end_time);
+
+        // Tokens already earned by the recipient (since last withdrawal).
+        let elapsed = effective_now.saturating_sub(stream.last_withdraw_time);
+        let earned = stream.flow_rate * elapsed as i128;
+
+        // Total streamed so far from start (already paid out in previous withdrawals + earned now).
+        let total_streamed =
+            stream.flow_rate * effective_now.saturating_sub(stream.start_time) as i128;
+
+        // Remaining unstreamed deposit.
+        let remaining = stream.deposit.saturating_sub(total_streamed);
+
+        // cancel_amount must not exceed the unstreamed remainder, and enough must be left
+        // to form at least one second of a new stream.
+        if cancel_amount >= remaining || (remaining - cancel_amount) < stream.flow_rate {
+            return Err(StreamError::InvalidPartialCancel);
+        }
+
+        let new_deposit = remaining - cancel_amount;
+
+        let token_client = token::Client::new(&env, &stream.token);
+
+        // Pay recipient their earned tokens.
+        if earned > 0 {
+            token_client.transfer(&env.current_contract_address(), &stream.recipient, &earned);
+        }
+
+        // Refund cancel_amount to sender.
+        token_client.transfer(&env.current_contract_address(), &sender, &cancel_amount);
+
+        // Mark original stream as cancelled.
+        stream.status = StreamStatus::Cancelled;
+        save_stream(&env, &stream);
+        events::stream_cancelled(&env, stream_id, &sender, cancel_amount, earned);
+
+        // Create a new stream with new_deposit at the same flow_rate.
+        let new_duration = (new_deposit / stream.flow_rate) as u64;
+        let new_end_time = now + new_duration;
+        let new_stream_id = next_stream_id(&env);
+
+        let new_stream = Stream {
+            id: new_stream_id,
+            sender: stream.sender.clone(),
+            recipient: stream.recipient.clone(),
+            token: stream.token.clone(),
+            deposit: new_deposit,
+            flow_rate: stream.flow_rate,
+            start_time: now,
+            end_time: new_end_time,
+            last_withdraw_time: now,
+            status: StreamStatus::Active,
+            auto_renew: stream.auto_renew,
+        };
+
+        save_stream(&env, &new_stream);
+        index_by_sender(&env, &sender, new_stream_id);
+        index_by_recipient(&env, &stream.recipient, new_stream_id);
+
+        events::stream_partial_cancelled(
+            &env,
+            stream_id,
+            new_stream_id,
+            &sender,
+            cancel_amount,
+            new_deposit,
+        );
+
+        Ok(new_stream_id)
+    }
+
     /// Adds more tokens to an existing stream, extending its end time proportionally.
     ///
     /// # Arguments
