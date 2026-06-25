@@ -459,4 +459,32 @@ impl SoroStreamContract {
         }
         streams
     }
+
+    /// Returns only active streams created by a sender address.
+    pub fn get_active_streams_by_sender(env: Env, sender: Address) -> Vec<Stream> {
+        let ids = get_ids_by_sender(&env, &sender);
+        let mut streams = Vec::new(&env);
+        for id in ids.iter() {
+            if let Some(s) = load_stream(&env, id) {
+                if s.status == StreamStatus::Active {
+                    streams.push_back(s);
+                }
+            }
+        }
+        streams
+    }
+
+    /// Returns only active streams targeting a recipient address.
+    pub fn get_active_streams_by_recipient(env: Env, recipient: Address) -> Vec<Stream> {
+        let ids = get_ids_by_recipient(&env, &recipient);
+        let mut streams = Vec::new(&env);
+        for id in ids.iter() {
+            if let Some(s) = load_stream(&env, id) {
+                if s.status == StreamStatus::Active {
+                    streams.push_back(s);
+                }
+            }
+        }
+        streams
+    }
 }
