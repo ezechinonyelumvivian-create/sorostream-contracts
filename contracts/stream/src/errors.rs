@@ -25,4 +25,6 @@ pub enum StreamError {
     NotInitialized = 9,
     /// Contract is paused; operation rejected.
     ContractPaused = 10,
+    /// start_time is in the past.
+    InvalidStartTime = 11,
 }

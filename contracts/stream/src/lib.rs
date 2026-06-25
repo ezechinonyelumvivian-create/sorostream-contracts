@@ -90,6 +90,7 @@ impl SoroStreamContract {
         token: Address,
         amount: i128,
         duration_seconds: u64,
+        start_time: u64,
         auto_renew: bool,
     ) -> Result<u64, StreamError> {
         sender.require_auth();
@@ -105,9 +106,12 @@ impl SoroStreamContract {
             return Err(StreamError::InvalidDuration);
         }
 
+        if start_time < env.ledger().timestamp() {
+            return Err(StreamError::InvalidStartTime);
+        }
+
         let flow_rate = amount / duration_seconds as i128;
-        let now = env.ledger().timestamp();
-        let end_time = now + duration_seconds;
+        let end_time = start_time + duration_seconds;
         let stream_id = next_stream_id(&env);
 
         token::Client::new(&env, &token).transfer(
@@ -123,9 +127,9 @@ impl SoroStreamContract {
             token,
             deposit: amount,
             flow_rate,
-            start_time: now,
+            start_time,
             end_time,
-            last_withdraw_time: now,
+            last_withdraw_time: start_time,
             status: StreamStatus::Active,
             auto_renew,
         };
@@ -162,7 +166,7 @@ impl SoroStreamContract {
         }
 
         let now = env.ledger().timestamp();
-        let effective_now = now.min(stream.end_time);
+        let effective_now = now.min(stream.end_time).max(stream.start_time);
         let elapsed = effective_now.saturating_sub(stream.last_withdraw_time);
         let claimable = stream.flow_rate * elapsed as i128;
 
@@ -313,6 +317,9 @@ impl SoroStreamContract {
         }
 
         let now = env.ledger().timestamp();
+        if now < stream.start_time {
+            return Ok(0);
+        }
         let effective_now = now.min(stream.end_time);
         let elapsed = effective_now.saturating_sub(stream.last_withdraw_time);
         Ok(stream.flow_rate * elapsed as i128)

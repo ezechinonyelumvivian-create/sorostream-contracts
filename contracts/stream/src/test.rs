@@ -57,7 +57,7 @@ fn test_create_stream_success() {
         &t.token_id,
         &100_000,
         &1000,
-        &false,
+        &0, &false,
     );
     assert_eq!(stream_id, 0);
 
@@ -79,7 +79,7 @@ fn test_withdraw_partial() {
         &t.token_id,
         &100_000,
         &1000,
-        &false,
+        &0, &false,
     );
 
     t.env.ledger().set_timestamp(500);
@@ -101,7 +101,7 @@ fn test_withdraw_full() {
         &t.token_id,
         &100_000,
         &1000,
-        &false,
+        &0, &false,
     );
 
     t.env.ledger().set_timestamp(1000);
@@ -126,7 +126,7 @@ fn test_cancel_stream_splits_correctly() {
         &t.token_id,
         &100_000,
         &1000,
-        &false,
+        &0, &false,
     );
 
     t.env.ledger().set_timestamp(300);
@@ -155,7 +155,7 @@ fn test_top_up_extends_duration() {
         &t.token_id,
         &100_000,
         &1000,
-        &false,
+        &0, &false,
     );
     let stream_before = c.get_stream(&stream_id);
 
@@ -185,7 +185,7 @@ fn test_auto_renew_restarts_on_completion() {
     let c = SoroStreamContractClient::new(&env, &contract_id);
     env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&sender, &recipient, &token_id, &100_000, &1000, &true);
+    let stream_id = c.create_stream(&sender, &recipient, &token_id, &100_000, &1000, &0, &true);
 
     // Withdraw at end_time — triggers auto-renew re-lock from sender
     env.ledger().set_timestamp(1000);
@@ -209,7 +209,7 @@ fn test_cannot_withdraw_if_not_recipient() {
         &t.token_id,
         &100_000,
         &1000,
-        &false,
+        &0, &false,
     );
     let other = Address::generate(&t.env);
 
@@ -228,7 +228,7 @@ fn test_cannot_cancel_if_not_sender() {
         &t.token_id,
         &100_000,
         &1000,
-        &false,
+        &0, &false,
     );
     let other = Address::generate(&t.env);
 
@@ -241,7 +241,7 @@ fn test_zero_amount_fails() {
     let t = setup();
     let c = client(&t);
 
-    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &0, &1000, &false);
+    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &0, &1000, &0, &false);
     assert!(result.is_err());
 }
 
@@ -257,7 +257,7 @@ fn test_get_claimable_calculates_correctly() {
         &t.token_id,
         &100_000,
         &1000,
-        &false,
+        &0, &false,
     );
 
     t.env.ledger().set_timestamp(250);
@@ -281,7 +281,7 @@ fn test_upgrade_retains_stream_state() {
         &t.token_id,
         &100_000,
         &1000,
-        &false,
+        &0, &false,
     );
 
     // Upload the contract WASM and get its hash
@@ -361,7 +361,7 @@ fn test_admin_persists_across_calls() {
     let admin = Address::generate(&t.env);
     c.initialize(&admin);
     // Interleave unrelated contract calls and re-check admin
-    c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
     assert_eq!(c.get_admin(), admin);
 }
 
@@ -385,7 +385,7 @@ fn test_create_stream_blocked_when_paused() {
     let admin = Address::generate(&t.env);
     c.initialize(&admin);
     c.pause();
-    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
     assert!(result.is_err());
 }
 
@@ -397,7 +397,7 @@ fn test_create_stream_works_after_unpause() {
     c.initialize(&admin);
     c.pause();
     c.unpause();
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &false);
     assert_eq!(stream_id, 0);
 }
 
@@ -410,4 +410,45 @@ fn test_pause_rejected_for_non_admin() {
     t.env.set_auths(&[]);
     assert!(c.try_pause().is_err());
     assert!(c.try_unpause().is_err());
+}
+
+#[test]
+fn test_future_start_stream_vests_after_start() {
+    let t = setup();
+    let c = client(&t);
+    t.env.ledger().set_timestamp(1000);
+
+    // start_time 500 seconds in the future
+    let stream_id =
+        c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &1500, &false);
+
+    // advance past start_time
+    t.env.ledger().set_timestamp(2000);
+    let claimable = c.get_claimable(&stream_id);
+    assert_eq!(claimable, 50_000); // 500 of 1000 seconds elapsed
+}
+
+#[test]
+fn test_claimable_zero_before_start_time() {
+    let t = setup();
+    let c = client(&t);
+    t.env.ledger().set_timestamp(1000);
+
+    let stream_id =
+        c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &2000, &false);
+
+    // still before start_time
+    t.env.ledger().set_timestamp(1500);
+    assert_eq!(c.get_claimable(&stream_id), 0);
+}
+
+#[test]
+fn test_past_start_time_rejected() {
+    let t = setup();
+    let c = client(&t);
+    t.env.ledger().set_timestamp(1000);
+
+    let result =
+        c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &false);
+    assert!(result.is_err());
 }
