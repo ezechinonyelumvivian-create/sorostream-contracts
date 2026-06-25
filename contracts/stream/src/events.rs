@@ -12,12 +12,24 @@ pub fn stream_created(
 ) {
     env.events().publish(
         (Symbol::new(env, "StreamCreated"), stream_id),
-        (sender.clone(), recipient.clone(), amount, flow_rate, end_time),
+        (
+            sender.clone(),
+            recipient.clone(),
+            amount,
+            flow_rate,
+            end_time,
+        ),
     );
 }
 
 /// Emitted when a recipient withdraws claimable tokens.
-pub fn stream_withdrawn(env: &Env, stream_id: u64, recipient: &Address, amount: i128, timestamp: u64) {
+pub fn stream_withdrawn(
+    env: &Env,
+    stream_id: u64,
+    recipient: &Address,
+    amount: i128,
+    timestamp: u64,
+) {
     env.events().publish(
         (Symbol::new(env, "StreamWithdrawn"), stream_id),
         (recipient.clone(), amount, timestamp),
@@ -48,8 +60,21 @@ pub fn stream_topped_up(env: &Env, stream_id: u64, added_amount: i128, new_end_t
 
 /// Emitted when a stream naturally reaches its end time.
 pub fn stream_completed(env: &Env, stream_id: u64) {
+    env.events()
+        .publish((Symbol::new(env, "StreamCompleted"), stream_id), ());
+}
+
+/// Emitted when a sender partially cancels a stream, spawning a new smaller stream.
+pub fn stream_partial_cancelled(
+    env: &Env,
+    old_stream_id: u64,
+    new_stream_id: u64,
+    sender: &Address,
+    refund_amount: i128,
+    new_deposit: i128,
+) {
     env.events().publish(
-        (Symbol::new(env, "StreamCompleted"), stream_id),
-        (),
+        (Symbol::new(env, "StreamPartialCancelled"), old_stream_id),
+        (new_stream_id, sender.clone(), refund_amount, new_deposit),
     );
 }
