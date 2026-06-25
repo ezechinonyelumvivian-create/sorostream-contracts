@@ -112,6 +112,10 @@ impl SoroStreamContract {
 
         mark_nonce_used(&env, &sender, nonce);
 
+        if start_time < env.ledger().timestamp() {
+            return Err(StreamError::InvalidStartTime);
+        }
+
         let flow_rate = amount / duration_seconds as i128;
         let now = env.ledger().timestamp();
         let end_time = now + duration_seconds;
@@ -134,7 +138,7 @@ impl SoroStreamContract {
             start_time: now,
             cliff_time,
             end_time,
-            last_withdraw_time: now,
+            last_withdraw_time: start_time,
             status: StreamStatus::Active,
             auto_renew,
         };
