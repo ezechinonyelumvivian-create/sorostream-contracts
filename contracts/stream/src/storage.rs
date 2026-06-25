@@ -131,3 +131,23 @@ pub fn set_paused(env: &Env, paused: bool) {
         .instance()
         .set(&Symbol::new(env, PAUSED_KEY), &paused);
 }
+
+/// Gets the protocol fee in basis points (0 = no fee).
+pub fn get_protocol_fee(env: &Env) -> u32 {
+    env.storage().instance().get(&Symbol::new(env, PROTOCOL_FEE_KEY)).unwrap_or(0u32)
+}
+
+/// Sets the protocol fee in basis points.
+pub fn set_protocol_fee(env: &Env, fee_bps: u32) {
+    env.storage().instance().set(&Symbol::new(env, PROTOCOL_FEE_KEY), &fee_bps);
+}
+
+/// Gets the treasury address for protocol fees.
+pub fn get_treasury(env: &Env) -> Option<Address> {
+    env.storage().instance().get(&Symbol::new(env, TREASURY_KEY))
+}
+
+/// Sets the treasury address for protocol fees.
+pub fn set_treasury(env: &Env, treasury: &Address) {
+    env.storage().instance().set(&Symbol::new(env, TREASURY_KEY), treasury);
+}
