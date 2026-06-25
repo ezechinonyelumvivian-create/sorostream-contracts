@@ -205,17 +205,24 @@ impl SoroStreamContract {
             return Err(StreamError::ZeroAmount);
         }
 
-        token::Client::new(&env, &stream.token)
-            .transfer(&sender, &env.current_contract_address(), &amount);
+        // Only pull in the portion that maps to whole seconds; dust stays with sender.
+        let effective_amount = amount - (amount % stream.flow_rate);
 
-        let extra_seconds = (amount / stream.flow_rate) as u64;
+        if effective_amount <= 0 {
+            return Err(StreamError::ZeroAmount);
+        }
+
+        token::Client::new(&env, &stream.token)
+            .transfer(&sender, &env.current_contract_address(), &effective_amount);
+
+        let extra_seconds = (effective_amount / stream.flow_rate) as u64;
         stream.end_time += extra_seconds;
-        stream.deposit += amount;
+        stream.deposit += effective_amount;
 
         let new_end_time = stream.end_time;
         save_stream(&env, &stream);
 
-        events::stream_topped_up(&env, stream_id, amount, new_end_time);
+        events::stream_topped_up(&env, stream_id, effective_amount, new_end_time);
 
         Ok(())
     }

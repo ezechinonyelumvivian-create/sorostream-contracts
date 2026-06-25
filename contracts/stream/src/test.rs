@@ -195,3 +195,40 @@ fn test_get_claimable_calculates_correctly() {
     let claimable = c.get_claimable(&stream_id);
     assert_eq!(claimable, 25_000);
 }
+
+// flow_rate = 100_000 / 1000 = 100 stroops/sec
+// top_up with 50_099: 50_099 % 100 = 99 dust, effective = 50_000 (500 extra seconds)
+// sender balance should retain the 99 dust (never transferred out)
+#[test]
+fn test_top_up_dust_not_lost() {
+    let t = setup();
+    let c = client(&t);
+    t.env.ledger().set_timestamp(0);
+
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+
+    let balance_before = TokenClient::new(&t.env, &t.token_id).balance(&t.sender);
+    c.top_up(&stream_id, &t.sender, &50_099);
+    let balance_after = TokenClient::new(&t.env, &t.token_id).balance(&t.sender);
+
+    // Sender should only be charged effective_amount = 50_000 (dust 99 stays with sender)
+    assert_eq!(balance_before - balance_after, 50_000);
+
+    let stream = c.get_stream(&stream_id);
+    assert_eq!(stream.deposit, 150_000);
+    assert_eq!(stream.end_time, 1500); // 1000 + 500 extra seconds
+}
+
+// amount < flow_rate means effective_amount = 0, should be rejected
+#[test]
+fn test_top_up_amount_less_than_flow_rate_fails() {
+    let t = setup();
+    let c = client(&t);
+    t.env.ledger().set_timestamp(0);
+
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &false);
+
+    // flow_rate = 100; topping up with 99 < 100 → effective_amount = 0 → ZeroAmount error
+    let result = c.try_top_up(&stream_id, &t.sender, &99);
+    assert!(result.is_err());
+}
