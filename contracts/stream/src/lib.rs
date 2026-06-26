@@ -1,5 +1,8 @@
 #![no_std]
 #![allow(clippy::too_many_arguments)]
+// Make `std` available to test modules (host target is not no_std).
+#[cfg(test)]
+extern crate std;
 
 mod errors;
 mod events;
@@ -8,6 +11,8 @@ mod types;
 
 #[cfg(test)]
 mod test;
+#[cfg(test)]
+mod cost_bench;
 
 use errors::StreamError;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, Vec};
