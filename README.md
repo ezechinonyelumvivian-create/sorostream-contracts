@@ -70,6 +70,6 @@ stellar contract build
 
 This project participates in the **Stellar Wave Program** on [Drips Wave](https://drips.network/wave). Contributors earn rewards for resolving issues during weekly Wave sprints — funded by the Stellar Development Foundation, free for contributors to participate.
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full workflow.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full workflow. Contributors working on contract state should also read [docs/STORAGE.md](./docs/STORAGE.md) for persistent vs. temporary storage trade-offs.
 
 > **Note:** Do not start coding until assigned to an issue by a maintainer.
