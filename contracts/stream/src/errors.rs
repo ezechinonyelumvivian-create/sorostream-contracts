@@ -33,8 +33,6 @@ pub enum StreamError {
     InvalidPartialCancel = 13,
     /// Operation is not allowed while the contract is paused.
     ContractPaused = 14,
-    /// Batch arrays length mismatch
-    BatchLengthMismatch = 15,
-    /// Token does not match stream token
-    TokenMismatch = 16,
+    /// Amount is too small relative to duration: would produce a zero flow rate.
+    ZeroFlowRate = 15,
 }

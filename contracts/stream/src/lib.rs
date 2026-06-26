@@ -22,6 +22,19 @@ use types::{Stats, Stream, StreamStatus};
 #[contract]
 pub struct SoroStreamContract;
 
+pub fn fanout_create_stream(
+    env: Env,
+    sender: Address,
+    recipients: Vec<Address>,
+    weights: Vec<u32>,
+    token: Address,
+    total_amount: i128,
+    duration_seconds: u64,
+    cliff_seconds: u64,
+    nonce: u64,
+    auto_renew: bool,
+) -> Result<Vec<u64>, StreamError>
+
 #[contractimpl]
 impl SoroStreamContract {
     /// Initialises the contract by setting the admin address.
@@ -115,14 +128,15 @@ impl SoroStreamContract {
             return Err(StreamError::InvalidCliff);
         }
 
+        let flow_rate = amount / duration_seconds as i128;
+        if flow_rate == 0 {
+            return Err(StreamError::ZeroFlowRate);
+        }
+
         mark_nonce_used(&env, &sender, nonce);
 
         let now = env.ledger().timestamp();
-        let end_time = now.checked_add(duration_seconds).unwrap_or(0);
-        if end_time <= now {
-            return Err(StreamError::InvalidDuration);
-        }
-        let flow_rate = amount / duration_seconds as i128;
+        let end_time = now + duration_seconds;
         let cliff_time = now + cliff_seconds;
         let stream_id = next_stream_id(&env);
 
@@ -200,18 +214,24 @@ impl SoroStreamContract {
         // Handle natural completion
         if now >= stream.end_time {
             if stream.auto_renew {
-                let duration = stream.end_time - stream.start_time;
-                // Pull fresh deposit from sender for the new cycle
-                stream.sender.require_auth();
-                token::Client::new(&env, &stream.token).transfer(
-                    &stream.sender,
-                    &env.current_contract_address(),
-                    &stream.deposit,
-                );
-                stream.start_time = stream.end_time;
-                stream.end_time = stream.start_time + duration;
-                stream.last_withdraw_time = stream.start_time;
-                save_stream(&env, &stream);
+                let token_client = token::Client::new(&env, &stream.token);
+                let sender_balance = token_client.balance(&stream.sender);
+                if sender_balance < stream.deposit {
+                    events::auto_renew_failed(&env, stream_id, &stream.sender, stream.deposit);
+                    stream.status = StreamStatus::Completed;
+                    events::stream_completed(&env, stream_id);
+                } else {
+                    let duration = stream.end_time - stream.start_time;
+                    stream.sender.require_auth();
+                    token_client.transfer(
+                        &stream.sender,
+                        &env.current_contract_address(),
+                        &stream.deposit,
+                    );
+                    stream.start_time = stream.end_time;
+                    stream.end_time = stream.start_time + duration;
+                    stream.last_withdraw_time = stream.start_time;
+                }
             } else {
                 events::stream_completed(&env, stream_id);
                 remove_stream(&env, stream_id);
@@ -436,6 +456,27 @@ impl SoroStreamContract {
         load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)
     }
 
+    /// Returns a paginated list of all stream IDs that have ever been created.
+    ///
+    /// # Arguments
+    /// * `start` - Zero-based index of the first stream ID to return.
+    /// * `limit` - Maximum number of stream IDs to return (capped at 20).
+    pub fn get_all_stream_ids(env: Env, start: u32, limit: u32) -> Vec<u64> {
+        let current_id = get_current_stream_id(&env) as usize;
+        let cap = limit.min(20) as usize;
+        let start = start as usize;
+        let end = start.saturating_add(cap).min(current_id);
+        let mut ids = Vec::new(&env);
+
+        for stream_id in start..end {
+            if load_stream(&env, stream_id as u64).is_some() {
+                ids.push_back(stream_id as u64);
+            }
+        }
+
+        ids
+    }
+
     /// Returns the amount of tokens currently claimable by the recipient.
     ///
     /// # Arguments
@@ -455,6 +496,16 @@ impl SoroStreamContract {
         let effective_now = now.min(stream.end_time);
         let elapsed = effective_now.saturating_sub(stream.last_withdraw_time);
         Ok(stream.flow_rate * elapsed as i128)
+    }
+
+    /// Returns true if `address` is either the sender or recipient of the given stream.
+    ///
+    /// # Arguments
+    /// * `stream_id` - The stream to check.
+    /// * `address` - The address to test for participation.
+    pub fn is_participant(env: Env, stream_id: u64, address: Address) -> Result<bool, StreamError> {
+        let stream = load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)?;
+        Ok(stream.sender == address || stream.recipient == address)
     }
 
     /// Returns a paginated slice of streams created by a sender address.
@@ -570,6 +621,9 @@ impl SoroStreamContract {
             let recipient = recipients.get_unchecked(i);
             let amount = amounts.get_unchecked(i);
             let flow_rate = amount / duration_seconds as i128;
+            if flow_rate == 0 {
+                return Err(StreamError::ZeroFlowRate);
+            }
             let stream_id = next_stream_id(&env);
 
             let stream = Stream {
