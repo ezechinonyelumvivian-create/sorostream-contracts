@@ -62,6 +62,11 @@ pub fn load_stream(env: &Env, stream_id: u64) -> Option<Stream> {
     env.storage().persistent().get(&stream_id)
 }
 
+/// Removes a stream from storage.
+pub fn remove_stream(env: &Env, stream_id: u64) {
+    env.storage().persistent().remove(&stream_id);
+}
+
 // --- Counter helpers (persistent, O(1) per write) ---
 
 fn sender_count_key(env: &Env, addr: &Address) -> (Symbol, Address) {

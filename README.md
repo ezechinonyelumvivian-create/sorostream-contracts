@@ -56,6 +56,7 @@ stellar contract build
 | `cancel_stream(stream_id, sender)` | Cancels stream, splits balance |
 | `top_up(stream_id, sender, amount)` | Adds tokens, extends duration |
 | `get_stream(stream_id)` | Returns full `Stream` struct |
+| `get_all_stream_ids(start, limit)` | Returns a paginated list of all stream IDs ever created |
 | `get_claimable(stream_id)` | Returns currently claimable amount |
 | `get_streams_by_sender(sender)` | Returns all streams for a sender |
 | `get_streams_by_recipient(recipient)` | Returns all streams for a recipient |
@@ -70,6 +71,6 @@ stellar contract build
 
 This project participates in the **Stellar Wave Program** on [Drips Wave](https://drips.network/wave). Contributors earn rewards for resolving issues during weekly Wave sprints — funded by the Stellar Development Foundation, free for contributors to participate.
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full workflow.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full workflow. Contributors working on contract state should also read [docs/STORAGE.md](./docs/STORAGE.md) for persistent vs. temporary storage trade-offs.
 
 > **Note:** Do not start coding until assigned to an issue by a maintainer.

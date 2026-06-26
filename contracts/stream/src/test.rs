@@ -62,6 +62,27 @@ fn test_create_stream_success() {
 }
 
 #[test]
+fn test_get_all_stream_ids_enumerates_globally() {
+    let t = setup();
+    let c = client(&t);
+
+    let first_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    let second_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &1u64, &false);
+    let third_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &2u64, &false);
+
+    let all_ids = c.get_all_stream_ids(&0u32, &10u32);
+    assert_eq!(all_ids.len(), 3);
+    assert_eq!(all_ids.get_unchecked(0), first_id);
+    assert_eq!(all_ids.get_unchecked(1), second_id);
+    assert_eq!(all_ids.get_unchecked(2), third_id);
+
+    let paged_ids = c.get_all_stream_ids(&1u32, &2u32);
+    assert_eq!(paged_ids.len(), 2);
+    assert_eq!(paged_ids.get_unchecked(0), second_id);
+    assert_eq!(paged_ids.get_unchecked(1), third_id);
+}
+
+#[test]
 fn test_withdraw_partial() {
     let t = setup();
     let c = client(&t);
@@ -90,8 +111,8 @@ fn test_withdraw_full() {
     let balance = TokenClient::new(&t.env, &t.token_id).balance(&t.recipient);
     assert_eq!(balance, 100_000);
 
-    let stream = c.get_stream(&stream_id);
-    assert_eq!(stream.status, StreamStatus::Completed);
+    let result = c.try_get_stream(&stream_id);
+    assert!(result.is_err());
 }
 
 #[test]
@@ -124,7 +145,7 @@ fn test_top_up_extends_duration() {
     let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
     let stream_before = c.get_stream(&stream_id);
 
-    c.top_up(&stream_id, &t.sender, &50_000);
+    c.top_up(&stream_id, &t.sender, &t.token_id, &50_000);
 
     let stream_after = c.get_stream(&stream_id);
     assert_eq!(stream_after.end_time, stream_before.end_time + 500);

@@ -41,3 +41,14 @@ stellar contract build
 - Follow standard Rust formatting (`cargo fmt`).
 - All public functions must have doc comments.
 - No `unwrap()` in contract code — use `Result` with `StreamError`.
+
+## Contract Storage (read before touching `storage.rs`)
+
+Soroban contracts have **instance**, **persistent**, and **temporary** storage. They differ in cost, TTL behavior, and — critically — what happens when entries expire. Using the wrong type causes **silent data loss**: for example, storing stream indexes in temporary storage while streams live in persistent storage makes `get_streams_by_sender` return empty results even though streams still exist ([#1](https://github.com/SoroStream/sorostream-contracts/issues/1)).
+
+**Before adding or changing contract state:**
+
+1. Read [docs/STORAGE.md](./docs/STORAGE.md) for the full trade-off guide and the current key layout in `contracts/stream/src/storage.rs`.
+2. Never put long-lived indexes, balances, or user-visible state in `env.storage().temporary()` without maintainer approval and an explicit TTL-extension plan.
+3. Keep canonical records and their lookup indexes on the **same** durability level (today: persistent for streams + sender/recipient slots + nonces; instance for admin/pause/counter/fees).
+4. Update `docs/STORAGE.md` when you introduce new storage keys so the next contributor does not repeat past mistakes.
