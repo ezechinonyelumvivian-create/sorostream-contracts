@@ -1,0 +1,49 @@
+name: Deploy Mainnet
+
+on:
+  workflow_dispatch:
+    inputs:
+      network_passphrase:
+        description: 'Stellar mainnet network passphrase'
+        required: true
+        default: 'Public Global Stellar Network ; September 2015'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: mainnet
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32v1-none
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build WASM
+        run: cargo build --target wasm32v1-none --release
+
+      - name: Install Stellar CLI
+        run: cargo install --locked stellar-cli --features opt
+
+      - name: Deploy contract
+        env:
+          STELLAR_SECRET_KEY: ${{ secrets.MAINNET_DEPLOYER_SECRET_KEY }}
+          NETWORK_PASSPHRASE: ${{ inputs.network_passphrase }}
+        run: |
+          CONTRACT_ID=$(stellar contract deploy \
+            --wasm target/wasm32v1-none/release/stream.wasm \
+            --source "$STELLAR_SECRET_KEY" \
+            --network-passphrase "$NETWORK_PASSPHRASE" \
+            --rpc-url https://horizon.stellar.org)
+          echo "Deployed contract: $CONTRACT_ID"
+          jq --arg id "$CONTRACT_ID" '.StreamContract = $id' \
+            deployments/mainnet.json > deployments/mainnet.json.tmp
+          mv deployments/mainnet.json.tmp deployments/mainnet.json
+
+      - name: Commit updated deployment manifest
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore(deploy): update mainnet contract address'
+          file_pattern: deployments/mainnet.json

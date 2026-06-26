@@ -64,6 +64,14 @@ pub fn stream_completed(env: &Env, stream_id: u64) {
         .publish((Symbol::new(env, "StreamCompleted"), stream_id), ());
 }
 
+/// Emitted when an auto-renew re-lock fails because the sender has insufficient balance.
+pub fn auto_renew_failed(env: &Env, stream_id: u64, sender: &Address, required: i128) {
+    env.events().publish(
+        (Symbol::new(env, "AutoRenewFailed"), stream_id),
+        (sender.clone(), required),
+    );
+}
+
 /// Emitted when a sender partially cancels a stream, spawning a new smaller stream.
 pub fn stream_partial_cancelled(
     env: &Env,
