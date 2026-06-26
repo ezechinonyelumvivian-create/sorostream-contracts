@@ -7,6 +7,7 @@ use soroban_sdk::{
     Address, Env,
 };
 
+#[allow(dead_code)]
 const WASM: &[u8] =
     include_bytes!("../../../target/wasm32v1-none/release/sorostream_stream.wasm");
 
@@ -42,7 +43,7 @@ fn setup() -> TestEnv {
     }
 }
 
-fn client(t: &TestEnv) -> SoroStreamContractClient {
+fn client(t: &TestEnv) -> SoroStreamContractClient<'_> {
     SoroStreamContractClient::new(&t.env, &t.contract_id)
 }
 
