@@ -434,15 +434,3 @@ fn test_zero_duration_fails() {
     assert!(result.is_err());
 }
 
-pub fn fanout_create_stream(
-    env: Env,
-    sender: Address,
-    recipients: Vec<Address>,
-    weights: Vec<u32>,
-    token: Address,
-    total_amount: i128,
-    duration_seconds: u64,
-    cliff_seconds: u64,
-    nonce: u64,
-    auto_renew: bool,
-) -> Result<Vec<u64>, StreamError>

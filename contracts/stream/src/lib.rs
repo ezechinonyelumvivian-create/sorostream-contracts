@@ -13,6 +13,8 @@ mod types;
 mod test;
 #[cfg(test)]
 mod cost_bench;
+#[cfg(test)]
+mod storage_bench;
 
 use errors::StreamError;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, Vec};
@@ -26,19 +28,6 @@ use types::{Stats, Stream, StreamStatus};
 
 #[contract]
 pub struct SoroStreamContract;
-
-pub fn fanout_create_stream(
-    env: Env,
-    sender: Address,
-    recipients: Vec<Address>,
-    weights: Vec<u32>,
-    token: Address,
-    total_amount: i128,
-    duration_seconds: u64,
-    cliff_seconds: u64,
-    nonce: u64,
-    auto_renew: bool,
-) -> Result<Vec<u64>, StreamError>
 
 #[contractimpl]
 impl SoroStreamContract {

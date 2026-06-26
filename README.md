@@ -61,6 +61,8 @@ stellar contract build
 | `get_streams_by_sender(sender)` | Returns all streams for a sender |
 | `get_streams_by_recipient(recipient)` | Returns all streams for a recipient |
 
+For the full instruction reference with parameters, errors, events, and CLI examples, see [docs/contract-reference.md](./docs/contract-reference.md).
+
 ## Testnet Deployment
 
 | Contract | Address |
