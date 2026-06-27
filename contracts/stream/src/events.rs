@@ -102,3 +102,19 @@ pub fn contract_resumed(env: &Env, admin: &Address, timestamp: u64) {
         timestamp,
     );
 }
+
+/// Emitted when a stream is paused by the sender.
+pub fn stream_paused(env: &Env, stream_id: u64, sender: &Address) {
+    env.events().publish(
+        (Symbol::new(env, "StreamPaused"), stream_id),
+        sender.clone(),
+    );
+}
+
+/// Emitted when a stream is resumed by the sender.
+pub fn stream_resumed(env: &Env, stream_id: u64, sender: &Address) {
+    env.events().publish(
+        (Symbol::new(env, "StreamResumed"), stream_id),
+        sender.clone(),
+    );
+}

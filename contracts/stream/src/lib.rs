@@ -198,6 +198,7 @@ impl SoroStreamContract {
             last_withdraw_time: now,
             status: StreamStatus::Active,
             auto_renew,
+            last_pause_time: 0,
         };
 
         save_stream(&env, &stream);
@@ -230,11 +231,15 @@ impl SoroStreamContract {
         if stream.recipient != recipient {
             return Err(StreamError::NotRecipient);
         }
-        if stream.status != StreamStatus::Active {
+        if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
             return Err(StreamError::StreamNotActive);
         }
 
-        let now = env.ledger().timestamp();
+        let now = if stream.status == StreamStatus::Paused {
+            stream.last_pause_time
+        } else {
+            env.ledger().timestamp()
+        };
         if now < stream.lock_until {
             return Err(StreamError::StreamLocked);
         }
@@ -285,22 +290,7 @@ impl SoroStreamContract {
                     stream.last_withdraw_time = stream.start_time;
                 }
                 save_stream(&env, &stream);
-                // end_time > start_time is an invariant maintained on creation.
-                let duration = stream.end_time - stream.start_time;
-                stream.sender.require_auth();
-                token::Client::new(&env, &stream.token).transfer(
-                    &stream.sender,
-                    &env.current_contract_address(),
-                    &stream.deposit,
-                );
-                // Checked: new end_time could overflow if start_time is near u64::MAX.
-                let new_end = stream
-                    .end_time
-                    .checked_add(duration)
-                    .ok_or(StreamError::Overflow)?;
-                stream.start_time = stream.end_time;
-                stream.end_time = new_end;
-                stream.last_withdraw_time = stream.start_time;
+
             } else {
                 events::stream_completed(&env, stream_id);
                 remove_stream(&env, stream_id);
@@ -328,11 +318,15 @@ impl SoroStreamContract {
         if stream.sender != sender {
             return Err(StreamError::NotSender);
         }
-        if stream.status != StreamStatus::Active {
+        if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
             return Err(StreamError::StreamNotActive);
         }
 
-        let now = env.ledger().timestamp();
+        let now = if stream.status == StreamStatus::Paused {
+            stream.last_pause_time
+        } else {
+            env.ledger().timestamp()
+        };
         let recipient_amount = vesting_math::compute_earned(
             stream.flow_rate,
             now,
@@ -346,17 +340,6 @@ impl SoroStreamContract {
             stream.end_time,
             stream.start_time,
         );
-        let effective_now = now.min(stream.end_time);
-
-        // elapsed since last withdrawal — used for recipient payout.
-        let elapsed_since_withdraw = effective_now.saturating_sub(stream.last_withdraw_time);
-        // Checked multiply: flow_rate * elapsed can overflow with extreme inputs.
-        let recipient_amount = checked_flow_amount(stream.flow_rate, elapsed_since_withdraw)?;
-
-        // Total streamed from stream start — used to compute sender refund.
-        let elapsed_since_start = effective_now.saturating_sub(stream.start_time);
-        let total_streamed = checked_flow_amount(stream.flow_rate, elapsed_since_start)?;
-        let refund_amount = stream.deposit.saturating_sub(total_streamed);
 
         let token_client = token::Client::new(&env, &stream.token);
 
@@ -401,14 +384,18 @@ impl SoroStreamContract {
         if stream.sender != sender {
             return Err(StreamError::NotSender);
         }
-        if stream.status != StreamStatus::Active {
+        if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
             return Err(StreamError::StreamNotActive);
         }
         if cancel_amount <= 0 {
             return Err(StreamError::ZeroAmount);
         }
 
-        let now = env.ledger().timestamp();
+        let now = if stream.status == StreamStatus::Paused {
+            stream.last_pause_time
+        } else {
+            env.ledger().timestamp()
+        };
 
         // Tokens already earned by the recipient (since last withdrawal).
         let earned = vesting_math::compute_earned(
@@ -425,13 +412,6 @@ impl SoroStreamContract {
             stream.end_time,
             stream.start_time,
         );
-        // Tokens earned since last withdrawal.
-        let elapsed_since_withdraw = effective_now.saturating_sub(stream.last_withdraw_time);
-        let earned = checked_flow_amount(stream.flow_rate, elapsed_since_withdraw)?;
-
-        // Total streamed from start.
-        let elapsed_since_start = effective_now.saturating_sub(stream.start_time);
-        let total_streamed = checked_flow_amount(stream.flow_rate, elapsed_since_start)?;
 
         // Remaining unstreamed deposit.
         let remaining = stream.deposit.saturating_sub(total_streamed);
@@ -478,6 +458,7 @@ impl SoroStreamContract {
             last_withdraw_time: now,
             status: StreamStatus::Active,
             auto_renew: stream.auto_renew,
+            last_pause_time: 0,
         };
 
         save_stream(&env, &new_stream);
@@ -520,12 +501,18 @@ impl SoroStreamContract {
         if stream.token != token {
             return Err(StreamError::TokenMismatch);
         }
-        if stream.status != StreamStatus::Active {
+        if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
             return Err(StreamError::StreamNotActive);
         }
         if amount <= 0 {
             return Err(StreamError::ZeroAmount);
         }
+
+        let now = if stream.status == StreamStatus::Paused {
+            stream.last_pause_time
+        } else {
+            env.ledger().timestamp()
+        };
 
         // Dust that doesn't map to whole seconds stays with the sender.
         // amount % flow_rate is always < flow_rate ≤ amount, so subtraction is safe.
@@ -597,18 +584,16 @@ impl SoroStreamContract {
     pub fn get_claimable(env: Env, stream_id: u64) -> Result<i128, StreamError> {
         let stream = load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)?;
 
-        if stream.status != StreamStatus::Active {
+        if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
             return Ok(0);
         }
 
-        let now = env.ledger().timestamp();
-        Ok(vesting_math::compute_claimable(
-            stream.flow_rate,
-            now,
-            stream.cliff_time,
-            stream.end_time,
-            stream.last_withdraw_time,
-        ))
+        let now = if stream.status == StreamStatus::Paused {
+            stream.last_pause_time
+        } else {
+            env.ledger().timestamp()
+        };
+
         if now < stream.cliff_time {
             return Ok(0);
         }
@@ -617,6 +602,7 @@ impl SoroStreamContract {
         let elapsed = effective_now.saturating_sub(stream.last_withdraw_time);
         checked_flow_amount(stream.flow_rate, elapsed)
     }
+
 
     /// Returns true if `address` is either the sender or recipient of the given stream.
     ///
@@ -682,6 +668,62 @@ impl SoroStreamContract {
         streams
     }
 
+    /// Pauses an active stream.
+    pub fn pause_stream(env: Env, stream_id: u64, sender: Address) -> Result<(), StreamError> {
+        if is_paused(&env) {
+            return Err(StreamError::ContractPaused);
+        }
+        sender.require_auth();
+
+        let mut stream = load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)?;
+        if stream.sender != sender {
+            return Err(StreamError::NotSender);
+        }
+        if stream.status != StreamStatus::Active {
+            return Err(StreamError::StreamNotActive);
+        }
+
+        stream.status = StreamStatus::Paused;
+        stream.last_pause_time = env.ledger().timestamp();
+        save_stream(&env, &stream);
+
+        events::stream_paused(&env, stream_id, &sender);
+        Ok(())
+    }
+
+    /// Resumes a paused stream, pushing back the end time.
+    pub fn resume_stream(env: Env, stream_id: u64, sender: Address) -> Result<(), StreamError> {
+        if is_paused(&env) {
+            return Err(StreamError::ContractPaused);
+        }
+        sender.require_auth();
+
+        let mut stream = load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)?;
+        if stream.sender != sender {
+            return Err(StreamError::NotSender);
+        }
+        if stream.status != StreamStatus::Paused {
+            return Err(StreamError::StreamNotPaused);
+        }
+
+        let now = env.ledger().timestamp();
+        let paused_duration = now.saturating_sub(stream.last_pause_time);
+
+        // Shift all relevant timestamps by the duration it was paused
+        stream.end_time = stream.end_time.checked_add(paused_duration).unwrap_or(u64::MAX);
+        stream.cliff_time = stream.cliff_time.checked_add(paused_duration).unwrap_or(u64::MAX);
+        stream.start_time = stream.start_time.checked_add(paused_duration).unwrap_or(u64::MAX);
+        stream.last_withdraw_time = stream.last_withdraw_time.checked_add(paused_duration).unwrap_or(u64::MAX);
+        stream.lock_until = stream.lock_until.checked_add(paused_duration).unwrap_or(u64::MAX);
+        
+        stream.status = StreamStatus::Active;
+        stream.last_pause_time = 0;
+        save_stream(&env, &stream);
+
+        events::stream_resumed(&env, stream_id, &sender);
+        Ok(())
+    }
+
     /// Creates multiple payment streams in a single transaction.
     ///
     /// # Errors
@@ -739,6 +781,7 @@ impl SoroStreamContract {
         for i in 0..recipients.len().min(amounts.len()) {
             let recipient = recipients.get_unchecked(i);
             let amount = amounts.get_unchecked(i);
+            let lock_until = lock_untils.get_unchecked(i);
             // Division safe: duration_seconds > 0 validated above.
             let flow_rate = amount / duration_seconds as i128;
             if flow_rate == 0 {
@@ -760,6 +803,7 @@ impl SoroStreamContract {
                 last_withdraw_time: now,
                 status: StreamStatus::Active,
                 auto_renew,
+                last_pause_time: 0,
             };
 
             save_stream(&env, &stream);
@@ -798,23 +842,26 @@ impl SoroStreamContract {
             if stream.recipient != recipient {
                 return Err(StreamError::NotRecipient);
             }
-            if stream.status != StreamStatus::Active {
+            if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
                 return Err(StreamError::StreamNotActive);
             }
 
-            let now = env.ledger().timestamp();
+            let now = if stream.status == StreamStatus::Paused {
+                stream.last_pause_time
+            } else {
+                env.ledger().timestamp()
+            };
+
             if now < stream.lock_until {
                 return Err(StreamError::StreamLocked);
             }
 
             let effective_now = now.min(stream.end_time);
-            let claimable = vesting_math::compute_earned(
-                stream.flow_rate,
-                now,
-                stream.end_time,
-                stream.last_withdraw_time,
-            );
-            let elapsed = effective_now.saturating_sub(stream.last_withdraw_time);
+            let elapsed = if now < stream.cliff_time {
+                0u64
+            } else {
+                effective_now.saturating_sub(stream.last_withdraw_time)
+            };
             // Checked: flow_rate * elapsed can overflow with large inputs.
             let claimable = checked_flow_amount(stream.flow_rate, elapsed)?;
 

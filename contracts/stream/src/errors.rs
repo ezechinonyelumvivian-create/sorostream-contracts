@@ -39,16 +39,12 @@ pub enum StreamError {
     BatchLengthMismatch = 16,
     /// Token address does not match the stream's token.
     TokenMismatch = 17,
-    /// Token address does not match the stream's token.
-    TokenMismatch = 16,
-    /// Batch recipients and amounts vectors have different lengths.
-    BatchLengthMismatch = 17,
-    /// Top-up token address does not match the stream's token.
-    TokenMismatch = 16,
-    /// Batch recipients and amounts vectors have different lengths.
-    BatchLengthMismatch = 17,
+    /// Stream is locked and cannot be withdrawn from yet.
+    StreamLocked = 18,
     /// A numeric operation overflowed or produced an out-of-range value.
     /// This is returned instead of panicking when user-controllable inputs
     /// (e.g. very large amounts or durations) would cause integer overflow.
-    Overflow = 15,
+    Overflow = 19,
+    /// Stream is not paused.
+    StreamNotPaused = 20,
 }

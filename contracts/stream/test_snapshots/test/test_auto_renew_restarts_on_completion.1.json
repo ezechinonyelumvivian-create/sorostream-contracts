@@ -313,7 +313,7 @@
                         "symbol": "end_time"
                       },
                       "val": {
-                        "u64": 1000
+                        "u64": 2000
                       }
                     },
                     {
@@ -337,10 +337,18 @@
                     },
                     {
                       "key": {
-                        "symbol": "last_withdraw_time"
+                        "symbol": "last_pause_time"
                       },
                       "val": {
                         "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_withdraw_time"
+                      },
+                      "val": {
+                        "u64": 1000
                       }
                     },
                     {
@@ -372,7 +380,7 @@
                         "symbol": "start_time"
                       },
                       "val": {
-                        "u64": 0
+                        "u64": 1000
                       }
                     },
                     {
