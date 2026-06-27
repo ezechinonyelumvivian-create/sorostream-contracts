@@ -36,6 +36,56 @@ cargo clippy -- -D warnings
 stellar contract build
 ```
 
+## Security Audit Checklist
+
+Every PR that adds or modifies a contract instruction **must** pass through this checklist. Copy it into your PR description (the PR template includes it automatically).
+
+### Input Validation
+
+- [ ] All numeric inputs are checked for zero, negative, or overflow conditions before use.
+  *Example:* [`create_stream` checks `amount <= 0`](./contracts/stream/src/lib.rs) and [`cliff_seconds > duration_seconds`](./contracts/stream/src/lib.rs).
+- [ ] Vector/array inputs are bounds-checked (matching lengths, capped size).
+  *Example:* [`batch_create_stream` checks `recipients.len() != amounts.len()`](./contracts/stream/src/lib.rs).
+
+### Authorization Checks
+
+- [ ] Every state-mutating function calls `require_auth()` on the appropriate party (sender, recipient, or admin).
+  *Example:* [`withdraw` calls `recipient.require_auth()`](./contracts/stream/src/lib.rs).
+- [ ] Admin-only functions use `check_admin()` which reads and verifies the stored admin address.
+  *Example:* [`pause` calls `check_admin(&env)`](./contracts/stream/src/lib.rs).
+- [ ] No unauthorized address can modify another user's streams or funds.
+
+### Arithmetic Overflow
+
+- [ ] All arithmetic uses `saturating_sub`, `checked_add`, or equivalent — never raw subtraction that could underflow.
+  *Example:* [`cancel_stream` uses `stream.deposit.saturating_sub(...)`](./contracts/stream/src/lib.rs).
+- [ ] Division-before-multiplication patterns are avoided (or documented if intentional for dust handling).
+  *Example:* [`top_up` calculates `effective_amount` to discard sub-flow-rate dust](./contracts/stream/src/lib.rs).
+
+### Storage Cleanup
+
+- [ ] Completed or removed streams are cleaned up from persistent storage.
+  *Example:* [`withdraw` calls `remove_stream` when a non-renewing stream completes](./contracts/stream/src/lib.rs).
+- [ ] New storage keys are documented in [`docs/STORAGE.md`](./docs/STORAGE.md).
+- [ ] Indexes and canonical records use the same durability level (see [STORAGE.md](./docs/STORAGE.md) for why).
+
+### Event Emission
+
+- [ ] Every state change emits an event so off-chain indexers can track it.
+  *Example:* [`create_stream` emits `StreamCreated`](./contracts/stream/src/events.rs); [`cancel_stream` emits `StreamCancelled`](./contracts/stream/src/events.rs).
+- [ ] Events include enough data for an indexer to reconstruct state without querying the contract.
+
+### Property-Based Testing Guidance
+
+When adding a new instruction, consider writing property-based tests that verify invariants hold across random inputs:
+
+- **Conservation of funds:** total tokens in contract + total withdrawn = total deposited.
+- **Monotonic time:** `last_withdraw_time` never decreases; `end_time` only increases on `top_up`.
+- **Index consistency:** `get_streams_by_sender` returns every stream created by that sender.
+- **Idempotency guards:** calling with the same nonce always returns `DuplicateStream`.
+
+Use the Soroban test environment with varied timestamps, amounts, and address combinations.
+
 ## Code Style
 
 - Follow standard Rust formatting (`cargo fmt`).

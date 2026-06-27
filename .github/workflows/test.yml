@@ -57,3 +57,7 @@ jobs:
         run: cargo build --target wasm32v1-none --release
       - name: Cross-contract integration tests
         run: cargo test integration_tests -- --nocapture
+      - name: Test
+        run: cargo test
+      - name: Storage baseline regression check
+        run: cargo test --package sorostream-stream -- storage_bench::check_storage_baseline_regression --nocapture
