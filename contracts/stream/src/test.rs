@@ -1041,6 +1041,17 @@ fn error_duplicate_stream() {
 
 #[test]
 fn error_invalid_partial_cancel_exceeds_remainder() {
+    let t = setup();
+    let c = client(&t);
+
+    let stream_id = c.create_stream(
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+    );
+
+    let result = c.try_partial_cancel_stream(&t.sender, stream_id, &100_000);
+    assert_eq!(result, Err(Ok(StreamError::InvalidPartialCancel)));
+}
+
 // ── Overflow / checked-arithmetic tests ──────────────────────────────────────
 
 /// `create_stream` with `now + duration_seconds` overflowing u64 must return
