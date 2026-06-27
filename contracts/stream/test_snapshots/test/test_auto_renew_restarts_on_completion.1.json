@@ -337,6 +337,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 1000
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {

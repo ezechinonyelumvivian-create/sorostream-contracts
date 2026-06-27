@@ -1566,6 +1566,14 @@ dependencies = [
  "proptest",
  "serde_json",
  "soroban-sdk",
+ "sorostream-treasury",
+]
+
+[[package]]
+name = "sorostream-treasury"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
 ]
 
 [[package]]

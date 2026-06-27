@@ -324,6 +324,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -466,6 +474,14 @@
                       },
                       "val": {
                         "u64": 1
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -616,6 +632,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -762,6 +786,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -904,6 +936,14 @@
                       },
                       "val": {
                         "u64": 4
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
