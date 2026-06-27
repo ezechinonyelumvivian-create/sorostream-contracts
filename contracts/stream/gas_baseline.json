@@ -1,0 +1,7 @@
+{
+  "_comment": "Gas cost baselines (CPU instructions) for regression testing. Update by running: cargo test --package sorostream-stream -- cost_regression --nocapture 2>&1 | grep BASELINE",
+  "create_stream": 267771,
+  "withdraw": 213660,
+  "top_up": 209969,
+  "cancel_stream": 402655
+}

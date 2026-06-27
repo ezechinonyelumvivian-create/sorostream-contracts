@@ -308,7 +308,7 @@ fn bench_top_up() {
         &100_000, &1000, &0, &0u64, &false,
     );
 
-    c.top_up(&stream_id, &b.sender, &50_000);
+    c.top_up(&stream_id, &b.sender, &b.token_id, &50_000);
     assert_within_limits(&b.env, "top_up");
 }
 
@@ -686,4 +686,92 @@ fn bench_get_stats_n30() {
 
     c.get_stats();
     assert_within_limits(&b.env, "get_stats (N=30)");
+}
+
+// ── Issue #107: Gas cost regression tests ────────────────────────────────────
+//
+// These tests measure CPU instructions for core operations and fail if the
+// cost increases by more than 10% over the committed baseline values in
+// `contracts/stream/gas_baseline.json`.
+
+const BASELINE_CREATE_STREAM: i64 = 267771;
+const BASELINE_WITHDRAW: i64 = 213660;
+const BASELINE_TOP_UP: i64 = 209969;
+const BASELINE_CANCEL_STREAM: i64 = 402655;
+const REGRESSION_THRESHOLD: f64 = 1.10;
+
+fn assert_no_regression(env: &Env, function_name: &str, baseline: i64) {
+    let res = env.cost_estimate().resources();
+    let threshold = (baseline as f64 * REGRESSION_THRESHOLD) as i64;
+    println!(
+        "\n[cost_regression: {function_name}]\n\
+         instructions : {current:>12}\n\
+         baseline     : {baseline:>12}\n\
+         threshold    : {threshold:>12}  (baseline + 10 %)\n\
+         BASELINE     : \"{function_name}\": {current}",
+        current = res.instructions,
+    );
+    assert!(
+        res.instructions <= threshold,
+        "{function_name}: CPU instructions {current} exceeded 10% regression threshold \
+         {threshold} (baseline {baseline})",
+        current = res.instructions,
+    );
+}
+
+#[test]
+fn cost_regression_create_stream() {
+    let b = setup_bench();
+    let c = client(&b);
+    b.env.ledger().set_timestamp(0);
+
+    c.create_stream(
+        &b.sender, &b.recipient, &b.token_id,
+        &100_000, &1000, &0, &0u64, &false,
+    );
+    assert_no_regression(&b.env, "create_stream", BASELINE_CREATE_STREAM);
+}
+
+#[test]
+fn cost_regression_withdraw() {
+    let b = setup_bench();
+    let c = client(&b);
+    b.env.ledger().set_timestamp(0);
+    c.create_stream(
+        &b.sender, &b.recipient, &b.token_id,
+        &100_000, &1000, &0, &0u64, &false,
+    );
+    b.env.ledger().set_timestamp(500);
+
+    c.withdraw(&0, &b.recipient);
+    assert_no_regression(&b.env, "withdraw", BASELINE_WITHDRAW);
+}
+
+#[test]
+fn cost_regression_top_up() {
+    let b = setup_bench();
+    let c = client(&b);
+    b.env.ledger().set_timestamp(0);
+    c.create_stream(
+        &b.sender, &b.recipient, &b.token_id,
+        &100_000, &1000, &0, &0u64, &false,
+    );
+
+    c.top_up(&0, &b.sender, &b.token_id, &50_000);
+    assert_no_regression(&b.env, "top_up", BASELINE_TOP_UP);
+}
+
+#[test]
+fn cost_regression_cancel_stream() {
+    let b = setup_bench();
+    let c = client(&b);
+    b.env.ledger().set_timestamp(0);
+    c.create_stream(
+        &b.sender, &b.recipient, &b.token_id,
+        &100_000, &1000, &0, &0u64, &false,
+    );
+    b.env.ledger().set_timestamp(300);
+
+    c.cancel_stream(&0, &b.sender);
+    assert_no_regression(&b.env, "cancel_stream", BASELINE_CANCEL_STREAM);
 }

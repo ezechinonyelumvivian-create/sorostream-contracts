@@ -61,6 +61,27 @@ stellar contract build
 | `get_streams_by_sender(sender)` | Returns all streams for a sender |
 | `get_streams_by_recipient(recipient)` | Returns all streams for a recipient |
 
+## Gas Cost Baselines
+
+CPU instruction counts per core operation, measured via `env.cost_estimate().resources()` in Rust-native simulation (not WASM — real costs are 5–20× higher).
+
+| Function         | CPU Instructions | Notes |
+|------------------|-----------------|-------|
+| `create_stream`  | 267,771         | Includes token transfer + index writes |
+| `withdraw`       | 213,660         | Mid-stream partial withdrawal |
+| `top_up`         | 209,969         | Extends stream duration |
+| `cancel_stream`  | 402,655         | Splits balance + removes storage + cleans indices |
+
+Baselines are stored in [`contracts/stream/gas_baseline.json`](./contracts/stream/gas_baseline.json). Regression tests in `cost_bench.rs` fail if any operation exceeds its baseline by more than 10%.
+
+Run benchmarks with:
+
+```bash
+cargo test --package sorostream-stream -- cost_bench --nocapture
+```
+
+For detailed per-function cost analysis, see [docs/cost-benchmarks.md](./docs/cost-benchmarks.md).
+
 ## Testnet Deployment
 
 | Contract | Address |

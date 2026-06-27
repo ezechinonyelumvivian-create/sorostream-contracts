@@ -96,6 +96,48 @@ pub fn index_by_recipient(env: &Env, recipient: &Address, stream_id: u64) {
     env.storage().persistent().set(&cnt_key, &(idx + 1));
 }
 
+/// Removes a stream ID from the sender's index (swap-and-pop).
+pub fn unindex_by_sender(env: &Env, sender: &Address, stream_id: u64) {
+    let cnt_key = sender_count_key(env, sender);
+    let cnt: u32 = env.storage().persistent().get(&cnt_key).unwrap_or(0u32);
+    for i in 0..cnt {
+        let slot_key = sender_slot_key(env, sender, i);
+        if let Some(id) = env.storage().persistent().get::<_, u64>(&slot_key) {
+            if id == stream_id {
+                let last = cnt - 1;
+                if i != last {
+                    let last_id: u64 = env.storage().persistent().get(&sender_slot_key(env, sender, last)).unwrap_or(0);
+                    env.storage().persistent().set(&slot_key, &last_id);
+                }
+                env.storage().persistent().remove(&sender_slot_key(env, sender, last));
+                env.storage().persistent().set(&cnt_key, &last);
+                return;
+            }
+        }
+    }
+}
+
+/// Removes a stream ID from the recipient's index (swap-and-pop).
+pub fn unindex_by_recipient(env: &Env, recipient: &Address, stream_id: u64) {
+    let cnt_key = recipient_count_key(env, recipient);
+    let cnt: u32 = env.storage().persistent().get(&cnt_key).unwrap_or(0u32);
+    for i in 0..cnt {
+        let slot_key = recipient_slot_key(env, recipient, i);
+        if let Some(id) = env.storage().persistent().get::<_, u64>(&slot_key) {
+            if id == stream_id {
+                let last = cnt - 1;
+                if i != last {
+                    let last_id: u64 = env.storage().persistent().get(&recipient_slot_key(env, recipient, last)).unwrap_or(0);
+                    env.storage().persistent().set(&slot_key, &last_id);
+                }
+                env.storage().persistent().remove(&recipient_slot_key(env, recipient, last));
+                env.storage().persistent().set(&cnt_key, &last);
+                return;
+            }
+        }
+    }
+}
+
 /// Returns all stream IDs for a sender by iterating over slots.
 pub fn get_ids_by_sender(env: &Env, sender: &Address) -> Vec<u64> {
     let cnt: u32 = env.storage().persistent().get(&sender_count_key(env, sender)).unwrap_or(0u32);
