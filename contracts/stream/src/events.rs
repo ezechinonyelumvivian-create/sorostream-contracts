@@ -102,3 +102,16 @@ pub fn contract_resumed(env: &Env, admin: &Address, timestamp: u64) {
         timestamp,
     );
 }
+
+/// Emitted when a protocol fee is collected on withdrawal.
+pub fn fee_collected(
+    env: &Env,
+    stream_id: u64,
+    amount: i128,
+    treasury: &Address,
+) {
+    env.events().publish(
+        (Symbol::new(env, "FeeCollected"), stream_id),
+        (amount, treasury.clone()),
+    );
+}
