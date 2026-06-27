@@ -57,6 +57,19 @@ jobs:
         run: cargo build --target wasm32v1-none --release
       - name: Cross-contract integration tests
         run: cargo test integration_tests -- --nocapture
+      - name: Testnet manifest validation
+        run: cargo test testnet_manifest_loads -- --nocapture
+      - name: Install Stellar CLI
+        if: env.SOROSTREAM_TESTNET_CONTRACT != ''
+        env:
+          SOROSTREAM_TESTNET_CONTRACT: ${{ secrets.SOROSTREAM_TESTNET_CONTRACT }}
+        run: cargo install --locked stellar-cli --features opt
+      - name: Live testnet integration tests
+        if: env.SOROSTREAM_TESTNET_CONTRACT != ''
+        env:
+          SOROSTREAM_TESTNET_CONTRACT: ${{ secrets.SOROSTREAM_TESTNET_CONTRACT }}
+          SOROSTREAM_TESTNET_SOURCE: ${{ secrets.SOROSTREAM_TESTNET_SOURCE }}
+        run: cargo test testnet_integration -- --ignored --nocapture
       - name: Test
         run: cargo test
       - name: Storage baseline regression check

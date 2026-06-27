@@ -1,5 +1,5 @@
-/// Pure vesting arithmetic functions extracted for formal verification.
-/// These functions have zero Soroban dependencies and operate on primitive types only.
+//! Pure vesting arithmetic functions extracted for formal verification.
+//! These functions have zero Soroban dependencies and operate on primitive types only.
 
 /// Computes the claimable amount with cliff enforcement (for withdrawals).
 pub fn compute_claimable(

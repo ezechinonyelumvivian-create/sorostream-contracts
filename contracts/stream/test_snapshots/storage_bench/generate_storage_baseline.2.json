@@ -1,6 +1,6 @@
 {
   "generators": {
-    "address": 6,
+    "address": 5,
     "nonce": 0
   },
   "auth": [
@@ -84,6 +84,9 @@
                 },
                 {
                   "bool": false
+                },
+                {
+                  "u64": 0
                 }
               ]
             }
@@ -293,6 +296,14 @@
                       },
                       "val": {
                         "u64": 500
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "lock_until"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {

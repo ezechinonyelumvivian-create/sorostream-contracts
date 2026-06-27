@@ -16,6 +16,10 @@ mod test;
 mod cost_bench;
 #[cfg(test)]
 mod storage_bench;
+#[cfg(test)]
+mod integration_tests;
+#[cfg(test)]
+mod testnet_integration_tests;
 
 use errors::StreamError;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, Vec, Symbol, IntoVal};
@@ -272,7 +276,9 @@ impl SoroStreamContract {
                     events::auto_renew_failed(&env, stream_id, &stream.sender, stream.deposit);
                     stream.status = StreamStatus::Completed;
                     events::stream_completed(&env, stream_id);
+                    save_stream(&env, &stream);
                 } else {
+                    // end_time > start_time is an invariant maintained on creation.
                     let duration = stream.end_time - stream.start_time;
                     stream.sender.require_auth();
                     token_client.transfer(
@@ -280,27 +286,16 @@ impl SoroStreamContract {
                         &env.current_contract_address(),
                         &stream.deposit,
                     );
+                    // Checked: new end_time could overflow if start_time is near u64::MAX.
+                    let new_end = stream
+                        .end_time
+                        .checked_add(duration)
+                        .ok_or(StreamError::Overflow)?;
                     stream.start_time = stream.end_time;
-                    stream.end_time = stream.start_time + duration;
+                    stream.end_time = new_end;
                     stream.last_withdraw_time = stream.start_time;
+                    save_stream(&env, &stream);
                 }
-                save_stream(&env, &stream);
-                // end_time > start_time is an invariant maintained on creation.
-                let duration = stream.end_time - stream.start_time;
-                stream.sender.require_auth();
-                token::Client::new(&env, &stream.token).transfer(
-                    &stream.sender,
-                    &env.current_contract_address(),
-                    &stream.deposit,
-                );
-                // Checked: new end_time could overflow if start_time is near u64::MAX.
-                let new_end = stream
-                    .end_time
-                    .checked_add(duration)
-                    .ok_or(StreamError::Overflow)?;
-                stream.start_time = stream.end_time;
-                stream.end_time = new_end;
-                stream.last_withdraw_time = stream.start_time;
             } else {
                 events::stream_completed(&env, stream_id);
                 remove_stream(&env, stream_id);
@@ -333,19 +328,6 @@ impl SoroStreamContract {
         }
 
         let now = env.ledger().timestamp();
-        let recipient_amount = vesting_math::compute_earned(
-            stream.flow_rate,
-            now,
-            stream.end_time,
-            stream.last_withdraw_time,
-        );
-        let refund_amount = vesting_math::compute_refund(
-            stream.deposit,
-            stream.flow_rate,
-            now,
-            stream.end_time,
-            stream.start_time,
-        );
         let effective_now = now.min(stream.end_time);
 
         // elapsed since last withdrawal — used for recipient payout.
@@ -425,13 +407,6 @@ impl SoroStreamContract {
             stream.end_time,
             stream.start_time,
         );
-        // Tokens earned since last withdrawal.
-        let elapsed_since_withdraw = effective_now.saturating_sub(stream.last_withdraw_time);
-        let earned = checked_flow_amount(stream.flow_rate, elapsed_since_withdraw)?;
-
-        // Total streamed from start.
-        let elapsed_since_start = effective_now.saturating_sub(stream.start_time);
-        let total_streamed = checked_flow_amount(stream.flow_rate, elapsed_since_start)?;
 
         // Remaining unstreamed deposit.
         let remaining = stream.deposit.saturating_sub(total_streamed);
@@ -609,13 +584,6 @@ impl SoroStreamContract {
             stream.end_time,
             stream.last_withdraw_time,
         ))
-        if now < stream.cliff_time {
-            return Ok(0);
-        }
-
-        let effective_now = now.min(stream.end_time);
-        let elapsed = effective_now.saturating_sub(stream.last_withdraw_time);
-        checked_flow_amount(stream.flow_rate, elapsed)
     }
 
     /// Returns true if `address` is either the sender or recipient of the given stream.
@@ -739,6 +707,7 @@ impl SoroStreamContract {
         for i in 0..recipients.len().min(amounts.len()) {
             let recipient = recipients.get_unchecked(i);
             let amount = amounts.get_unchecked(i);
+            let lock_until = lock_untils.get_unchecked(i);
             // Division safe: duration_seconds > 0 validated above.
             let flow_rate = amount / duration_seconds as i128;
             if flow_rate == 0 {
@@ -808,12 +777,6 @@ impl SoroStreamContract {
             }
 
             let effective_now = now.min(stream.end_time);
-            let claimable = vesting_math::compute_earned(
-                stream.flow_rate,
-                now,
-                stream.end_time,
-                stream.last_withdraw_time,
-            );
             let elapsed = effective_now.saturating_sub(stream.last_withdraw_time);
             // Checked: flow_rate * elapsed can overflow with large inputs.
             let claimable = checked_flow_amount(stream.flow_rate, elapsed)?;

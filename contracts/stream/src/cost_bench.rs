@@ -32,8 +32,6 @@
 //! cargo test --package sorostream-stream -- cost_bench --nocapture
 //! ```
 
-#![cfg(test)]
-
 use std::println;
 
 use super::*;
@@ -731,7 +729,7 @@ fn cost_regression_create_stream() {
 
     c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
-        &100_000, &1000, &0, &0u64, &false,
+        &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     assert_no_regression(&b.env, "create_stream", BASELINE_CREATE_STREAM);
 }
@@ -743,7 +741,7 @@ fn cost_regression_withdraw() {
     b.env.ledger().set_timestamp(0);
     c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
-        &100_000, &1000, &0, &0u64, &false,
+        &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     b.env.ledger().set_timestamp(500);
 
@@ -758,7 +756,7 @@ fn cost_regression_top_up() {
     b.env.ledger().set_timestamp(0);
     c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
-        &100_000, &1000, &0, &0u64, &false,
+        &100_000, &1000, &0, &0u64, &false, &0u64,
     );
 
     c.top_up(&0, &b.sender, &b.token_id, &50_000);
@@ -772,7 +770,7 @@ fn cost_regression_cancel_stream() {
     b.env.ledger().set_timestamp(0);
     c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
-        &100_000, &1000, &0, &0u64, &false,
+        &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     b.env.ledger().set_timestamp(300);
 

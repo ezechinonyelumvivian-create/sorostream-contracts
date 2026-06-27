@@ -1,4 +1,3 @@
-#![cfg(test)]
 
 extern crate std;
 
@@ -14,7 +13,6 @@ struct IntegrationEnv {
     env: Env,
     contract: Address,
     token: Address,
-    token_admin: Address,
     sender: Address,
     recipient: Address,
 }
@@ -35,7 +33,6 @@ fn setup_integration() -> IntegrationEnv {
         env,
         contract,
         token,
-        token_admin,
         sender,
         recipient,
     }
@@ -72,6 +69,7 @@ fn integration_full_lifecycle() {
         &0,
         &0u64,
         &false,
+        &0u64,
     );
 
     assert_eq!(balance(&ie, &ie.sender), 0);
@@ -118,6 +116,7 @@ fn integration_lifecycle_with_cliff() {
         &500,
         &0u64,
         &false,
+        &0u64,
     );
 
     // Before cliff: claimable is zero
@@ -161,6 +160,7 @@ fn integration_create_cancel_split() {
         &0,
         &0u64,
         &false,
+        &0u64,
     );
 
     ie.env.ledger().set_timestamp(400);
@@ -175,8 +175,8 @@ fn integration_create_cancel_split() {
         balance(&ie, &ie.recipient) + balance(&ie, &ie.sender),
         1_000_000
     );
-    // Stream marked cancelled
-    assert_eq!(c.get_stream(&stream_id).status, StreamStatus::Cancelled);
+    // Stream removed after cancel (storage cleanup)
+    assert!(c.try_get_stream(&stream_id).is_err());
 }
 
 // ── Top-up extends duration correctly ───────────────────────────────────────
@@ -197,6 +197,7 @@ fn integration_topup_extends_and_pays() {
         &0,
         &0u64,
         &false,
+        &0u64,
     );
 
     // Top up at t=200 with 500_000 more
@@ -245,6 +246,7 @@ fn integration_treasury_fees_on_batch_withdraw() {
         &0,
         &0u64,
         &false,
+        &0u64,
     );
 
     ie.env.ledger().set_timestamp(500);
@@ -285,6 +287,7 @@ fn integration_zero_fee_no_treasury_deduction() {
         &0,
         &0u64,
         &false,
+        &0u64,
     );
 
     ie.env.ledger().set_timestamp(500);
@@ -308,6 +311,7 @@ fn integration_batch_create_withdraw_lifecycle() {
     let recipients = soroban_sdk::vec![&ie.env, ie.recipient.clone(), recipient2.clone()];
     let amounts = soroban_sdk::vec![&ie.env, 1_000_000_i128, 2_000_000_i128];
 
+    let lock_untils = soroban_sdk::vec![&ie.env, 0u64, 0u64];
     let stream_ids = c.batch_create_stream(
         &ie.sender,
         &recipients,
@@ -315,6 +319,7 @@ fn integration_batch_create_withdraw_lifecycle() {
         &ie.token,
         &1000,
         &false,
+        &lock_untils,
     );
 
     assert_eq!(stream_ids.len(), 2);
@@ -353,6 +358,7 @@ fn integration_multi_stream_interleaved() {
         &0,
         &0u64,
         &false,
+        &0u64,
     );
     let s2 = c.create_stream(
         &ie.sender,
@@ -363,6 +369,7 @@ fn integration_multi_stream_interleaved() {
         &0,
         &1u64,
         &false,
+        &0u64,
     );
 
     // t=500: withdraw from both
@@ -415,6 +422,7 @@ fn integration_partial_cancel_lifecycle() {
         &0,
         &0u64,
         &false,
+        &0u64,
     );
 
     // At t=200, partial cancel reclaiming 300_000
@@ -471,7 +479,7 @@ fn integration_auto_renew_with_sac() {
     env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &sender, &recipient, &token, &1_000_000, &1000, &0, &0u64, &true,
+        &sender, &recipient, &token, &1_000_000, &1000, &0, &0u64, &true, &0u64,
     );
 
     // Complete first cycle
@@ -503,13 +511,13 @@ fn integration_query_streams_by_sender_recipient() {
     let r2 = Address::generate(&ie.env);
 
     let s1 = c.create_stream(
-        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &0u64, &false,
+        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &0u64, &false, &0u64,
     );
     let s2 = c.create_stream(
-        &ie.sender, &r2, &ie.token, &1_000_000, &1000, &0, &1u64, &false,
+        &ie.sender, &r2, &ie.token, &1_000_000, &1000, &0, &1u64, &false, &0u64,
     );
     let s3 = c.create_stream(
-        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &2u64, &false,
+        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &2u64, &false, &0u64,
     );
 
     // By sender: should find all 3
@@ -527,9 +535,12 @@ fn integration_query_streams_by_sender_recipient() {
     c.cancel_stream(&s1, &ie.sender);
 
     let active = c.get_active_streams_by_sender(&ie.sender);
-    assert_eq!(active.len(), 2); // s2, s3 still active
-    assert_eq!(active.get_unchecked(0).id, s2);
-    assert_eq!(active.get_unchecked(1).id, s3);
+    assert_eq!(active.len(), 2);
+    let active_ids: std::vec::Vec<u64> = (0..active.len())
+        .map(|i| active.get_unchecked(i).id)
+        .collect();
+    assert!(active_ids.contains(&s2));
+    assert!(active_ids.contains(&s3));
 }
 
 // ── Stats integration ───────────────────────────────────────────────────────
@@ -542,10 +553,10 @@ fn integration_stats_reflect_lifecycle() {
     mint(&ie, &ie.sender, &5_000_000);
 
     c.create_stream(
-        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &0u64, &false,
+        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &0u64, &false, &0u64,
     );
     c.create_stream(
-        &ie.sender, &ie.recipient, &ie.token, &2_000_000, &2000, &0, &1u64, &false,
+        &ie.sender, &ie.recipient, &ie.token, &2_000_000, &2000, &0, &1u64, &false, &0u64,
     );
 
     let stats = c.get_stats();

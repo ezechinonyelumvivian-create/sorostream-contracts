@@ -1,4 +1,3 @@
-#![cfg(test)]
 
 use super::*;
 use soroban_sdk::{
@@ -6,10 +5,6 @@ use soroban_sdk::{
     token::{Client as TokenClient, StellarAssetClient},
     Address, Env,
 };
-
-#[allow(dead_code)]
-const WASM: &[u8] =
-    include_bytes!("../../../target/wasm32v1-none/release/sorostream_stream.wasm");
 
 struct TestEnv {
     env: Env,
@@ -451,13 +446,13 @@ fn snapshot_event_stream_created() {
     t.env.ledger().set_timestamp(100);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
 
     let events = t.env.events().all();
     let create_events: std::vec::Vec<_> = events.iter().filter(|(_, topics, _)| {
         let topic_vec: soroban_sdk::Vec<Val> = topics.clone();
-        if topic_vec.len() >= 1 {
+        if !topic_vec.is_empty() {
             let first: Symbol = topic_vec.get(0).unwrap().into_val(&t.env);
             first == Symbol::new(&t.env, "StreamCreated")
         } else {
@@ -494,7 +489,7 @@ fn snapshot_event_stream_withdrawn() {
     t.env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
 
     t.env.ledger().set_timestamp(500);
@@ -503,7 +498,7 @@ fn snapshot_event_stream_withdrawn() {
     let events = t.env.events().all();
     let withdraw_events: std::vec::Vec<_> = events.iter().filter(|(_, topics, _)| {
         let topic_vec: soroban_sdk::Vec<Val> = topics.clone();
-        if topic_vec.len() >= 1 {
+        if !topic_vec.is_empty() {
             let first: Symbol = topic_vec.get(0).unwrap().into_val(&t.env);
             first == Symbol::new(&t.env, "StreamWithdrawn")
         } else {
@@ -536,7 +531,7 @@ fn snapshot_event_stream_cancelled() {
     t.env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
 
     t.env.ledger().set_timestamp(300);
@@ -545,7 +540,7 @@ fn snapshot_event_stream_cancelled() {
     let events = t.env.events().all();
     let cancel_events: std::vec::Vec<_> = events.iter().filter(|(_, topics, _)| {
         let topic_vec: soroban_sdk::Vec<Val> = topics.clone();
-        if topic_vec.len() >= 1 {
+        if !topic_vec.is_empty() {
             let first: Symbol = topic_vec.get(0).unwrap().into_val(&t.env);
             first == Symbol::new(&t.env, "StreamCancelled")
         } else {
@@ -578,14 +573,14 @@ fn snapshot_event_stream_topped_up() {
     t.env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     c.top_up(&stream_id, &t.sender, &t.token_id, &50_000);
 
     let events = t.env.events().all();
     let topup_events: std::vec::Vec<_> = events.iter().filter(|(_, topics, _)| {
         let topic_vec: soroban_sdk::Vec<Val> = topics.clone();
-        if topic_vec.len() >= 1 {
+        if !topic_vec.is_empty() {
             let first: Symbol = topic_vec.get(0).unwrap().into_val(&t.env);
             first == Symbol::new(&t.env, "StreamToppedUp")
         } else {
@@ -617,7 +612,7 @@ fn snapshot_event_stream_completed() {
     t.env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
 
     t.env.ledger().set_timestamp(1000);
@@ -626,7 +621,7 @@ fn snapshot_event_stream_completed() {
     let events = t.env.events().all();
     let completed_events: std::vec::Vec<_> = events.iter().filter(|(_, topics, _)| {
         let topic_vec: soroban_sdk::Vec<Val> = topics.clone();
-        if topic_vec.len() >= 1 {
+        if !topic_vec.is_empty() {
             let first: Symbol = topic_vec.get(0).unwrap().into_val(&t.env);
             first == Symbol::new(&t.env, "StreamCompleted")
         } else {
@@ -657,7 +652,7 @@ fn snapshot_event_stream_partial_cancelled() {
     t.env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
 
     // At t=200: streamed = 200*100 = 20_000; remaining = 80_000.
@@ -668,7 +663,7 @@ fn snapshot_event_stream_partial_cancelled() {
     let events = t.env.events().all();
     let partial_events: std::vec::Vec<_> = events.iter().filter(|(_, topics, _)| {
         let topic_vec: soroban_sdk::Vec<Val> = topics.clone();
-        if topic_vec.len() >= 1 {
+        if !topic_vec.is_empty() {
             let first: Symbol = topic_vec.get(0).unwrap().into_val(&t.env);
             first == Symbol::new(&t.env, "StreamPartialCancelled")
         } else {
@@ -715,7 +710,7 @@ fn snapshot_event_auto_renew_failed() {
     env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &sender, &recipient, &token_id, &100_000, &1000, &0, &0u64, &true,
+        &sender, &recipient, &token_id, &100_000, &1000, &0, &0u64, &true, &0u64,
     );
 
     env.ledger().set_timestamp(1000);
@@ -724,7 +719,7 @@ fn snapshot_event_auto_renew_failed() {
     let events = env.events().all();
     let renew_fail_events: std::vec::Vec<_> = events.iter().filter(|(_, topics, _)| {
         let topic_vec: soroban_sdk::Vec<Val> = topics.clone();
-        if topic_vec.len() >= 1 {
+        if !topic_vec.is_empty() {
             let first: Symbol = topic_vec.get(0).unwrap().into_val(&env);
             first == Symbol::new(&env, "AutoRenewFailed")
         } else {
@@ -811,7 +806,7 @@ fn error_not_recipient() {
     let t = setup();
     let c = client(&t);
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     let other = Address::generate(&t.env);
 
@@ -824,7 +819,7 @@ fn error_not_sender_on_cancel() {
     let t = setup();
     let c = client(&t);
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     let other = Address::generate(&t.env);
 
@@ -837,7 +832,7 @@ fn error_not_sender_on_top_up() {
     let t = setup();
     let c = client(&t);
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     let other = Address::generate(&t.env);
 
@@ -850,7 +845,7 @@ fn error_not_sender_on_partial_cancel() {
     let t = setup();
     let c = client(&t);
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     let other = Address::generate(&t.env);
 
@@ -865,13 +860,13 @@ fn error_stream_not_active_on_withdraw() {
     t.env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     // Cancel the stream first
     c.cancel_stream(&stream_id, &t.sender);
 
     let result = c.try_withdraw(&stream_id, &t.recipient);
-    assert_eq!(result, Err(Ok(StreamError::StreamNotActive)));
+    assert_eq!(result, Err(Ok(StreamError::StreamNotFound)));
 }
 
 #[test]
@@ -881,12 +876,12 @@ fn error_stream_not_active_on_cancel() {
     t.env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     c.cancel_stream(&stream_id, &t.sender);
 
     let result = c.try_cancel_stream(&stream_id, &t.sender);
-    assert_eq!(result, Err(Ok(StreamError::StreamNotActive)));
+    assert_eq!(result, Err(Ok(StreamError::StreamNotFound)));
 }
 
 #[test]
@@ -896,12 +891,12 @@ fn error_stream_not_active_on_top_up() {
     t.env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     c.cancel_stream(&stream_id, &t.sender);
 
     let result = c.try_top_up(&stream_id, &t.sender, &t.token_id, &10_000);
-    assert_eq!(result, Err(Ok(StreamError::StreamNotActive)));
+    assert_eq!(result, Err(Ok(StreamError::StreamNotFound)));
 }
 
 #[test]
@@ -911,12 +906,12 @@ fn error_stream_not_active_on_partial_cancel() {
     t.env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     c.cancel_stream(&stream_id, &t.sender);
 
     let result = c.try_partial_cancel_stream(&stream_id, &t.sender, &10_000);
-    assert_eq!(result, Err(Ok(StreamError::StreamNotActive)));
+    assert_eq!(result, Err(Ok(StreamError::StreamNotFound)));
 }
 
 #[test]
@@ -925,7 +920,7 @@ fn error_zero_amount_on_create() {
     let c = client(&t);
 
     let result = c.try_create_stream(
-        &t.sender, &t.recipient, &t.token_id, &0, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &0, &1000, &0, &0u64, &false, &0u64,
     );
     assert_eq!(result, Err(Ok(StreamError::ZeroAmount)));
 }
@@ -936,7 +931,7 @@ fn error_zero_amount_negative_on_create() {
     let c = client(&t);
 
     let result = c.try_create_stream(
-        &t.sender, &t.recipient, &t.token_id, &-100, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &-100, &1000, &0, &0u64, &false, &0u64,
     );
     assert_eq!(result, Err(Ok(StreamError::ZeroAmount)));
 }
@@ -946,7 +941,7 @@ fn error_zero_amount_on_top_up() {
     let t = setup();
     let c = client(&t);
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
 
     let result = c.try_top_up(&stream_id, &t.sender, &t.token_id, &0);
@@ -958,7 +953,7 @@ fn error_zero_amount_on_partial_cancel() {
     let t = setup();
     let c = client(&t);
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
 
     let result = c.try_partial_cancel_stream(&stream_id, &t.sender, &0);
@@ -974,8 +969,9 @@ fn error_invalid_duration_on_batch_create() {
     let amounts = soroban_vec![&t.env, 10_000i128];
 
     // duration_seconds = 0 causes end_time overflow check to fail
+    let lock_untils = soroban_vec![&t.env, 0u64];
     let result = c.try_batch_create_stream(
-        &t.sender, &recipients, &amounts, &t.token_id, &0, &false,
+        &t.sender, &recipients, &amounts, &t.token_id, &0, &false, &lock_untils,
     );
     assert_eq!(result, Err(Ok(StreamError::InvalidDuration)));
 }
@@ -986,7 +982,7 @@ fn error_invalid_cliff() {
     let c = client(&t);
 
     let result = c.try_create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &1001, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &1001, &0u64, &false, &0u64,
     );
     assert_eq!(result, Err(Ok(StreamError::InvalidCliff)));
 }
@@ -1031,16 +1027,30 @@ fn error_duplicate_stream() {
     let c = client(&t);
 
     c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     let result = c.try_create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     assert_eq!(result, Err(Ok(StreamError::DuplicateStream)));
 }
 
 #[test]
 fn error_invalid_partial_cancel_exceeds_remainder() {
+    let t = setup();
+    let c = client(&t);
+    t.env.ledger().set_timestamp(0);
+
+    let stream_id = c.create_stream(
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
+    );
+
+    // At t=0: remaining = 100_000. cancel_amount = 100_000 exceeds remainder
+    // (must be strictly less than remaining).
+    let result = c.try_partial_cancel_stream(&stream_id, &t.sender, &100_000);
+    assert_eq!(result, Err(Ok(StreamError::InvalidPartialCancel)));
+}
+
 // ── Overflow / checked-arithmetic tests ──────────────────────────────────────
 
 /// `create_stream` with `now + duration_seconds` overflowing u64 must return
@@ -1052,7 +1062,7 @@ fn test_create_stream_end_time_overflow() {
     t.env.ledger().set_timestamp(u64::MAX - 10);
     let result = c.try_create_stream(
         &t.sender, &t.recipient, &t.token_id,
-        &100_000, &1000, &0, &0u64, &false,
+        &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     assert!(result.is_err());
 }
@@ -1065,19 +1075,15 @@ fn test_create_stream_cliff_time_overflow() {
     t.env.ledger().set_timestamp(u64::MAX - 5);
     let result = c.try_create_stream(
         &t.sender, &t.recipient, &t.token_id,
-        &100_000, &100, &10, &0u64, &false,
+        &100_000, &100, &10, &0u64, &false, &0u64,
     );
     assert!(result.is_err());
 }
 
 /// Direct unit test of `checked_flow_amount`: a product that overflows i128
 /// returns `StreamError::Overflow` rather than panicking.
-///
-/// Via normal contract usage `flow_rate * elapsed ≤ deposit ≤ i128::MAX` (SAC
-/// bound), so this guard is defense-in-depth for future code paths.
 #[test]
 fn test_checked_flow_amount_overflow() {
-    // 10^19 * u64::MAX ≈ 1.844e38 > i128::MAX ≈ 1.701e38 → overflow.
     let result = checked_flow_amount(10_000_000_000_000_000_000_i128, u64::MAX);
     assert_eq!(result, Err(StreamError::Overflow));
 }
@@ -1089,22 +1095,23 @@ fn test_checked_flow_amount_ok() {
     assert_eq!(result, Ok(50_000));
 }
 
-/// `top_up` where `extra_seconds = top_up / flow_rate` overflows u64 must
-/// return an error. flow_rate = 1; top_up = u64::MAX + 1 tokens.
+/// `top_up` where `extra_seconds = top_up / flow_rate` overflows u64 must return an error.
 #[test]
 fn test_top_up_extra_seconds_overflow() {
     let t = setup();
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
-    );
+    use soroban_sdk::token::StellarAssetClient;
 
-    // At t=0: remaining = 100_000. cancel_amount = 100_000 exceeds remainder
-    // (must be strictly less than remaining).
-    let result = c.try_partial_cancel_stream(&stream_id, &t.sender, &100_000);
-    assert_eq!(result, Err(Ok(StreamError::InvalidPartialCancel)));
+    // flow_rate = 1 stroop/sec
+    let stream_id = c.create_stream(
+        &t.sender, &t.recipient, &t.token_id, &1_000, &1000, &0, &0u64, &false, &0u64,
+    );
+    let huge: i128 = (u64::MAX as i128) + 1;
+    StellarAssetClient::new(&t.env, &t.token_id).mint(&t.sender, &huge);
+    let result = c.try_top_up(&stream_id, &t.sender, &t.token_id, &huge);
+    assert!(result.is_err());
 }
 
 #[test]
@@ -1113,12 +1120,10 @@ fn error_invalid_partial_cancel_leaves_too_little() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    // flow_rate = 100_000 / 1000 = 100
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
 
-    // remaining = 100_000. Cancel 99_950 → new_deposit = 50 < flow_rate (100).
     let result = c.try_partial_cancel_stream(&stream_id, &t.sender, &99_950);
     assert_eq!(result, Err(Ok(StreamError::InvalidPartialCancel)));
 }
@@ -1129,10 +1134,10 @@ fn error_contract_paused() {
     let c = client(&t);
     let admin = Address::generate(&t.env);
     c.initialize(&admin);
-    c.pause();
+    c.emergency_pause();
 
     let result = c.try_create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     assert_eq!(result, Err(Ok(StreamError::ContractPaused)));
 }
@@ -1142,9 +1147,8 @@ fn error_zero_flow_rate() {
     let t = setup();
     let c = client(&t);
 
-    // amount=1, duration=1000 → flow_rate = 1/1000 = 0 (integer division)
     let result = c.try_create_stream(
-        &t.sender, &t.recipient, &t.token_id, &1, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &1, &1000, &0, &0u64, &false, &0u64,
     );
     assert_eq!(result, Err(Ok(StreamError::ZeroFlowRate)));
 }
@@ -1155,10 +1159,11 @@ fn error_zero_flow_rate_in_batch() {
     let c = client(&t);
 
     let recipients = soroban_vec![&t.env, t.recipient.clone()];
-    let amounts = soroban_vec![&t.env, 1i128]; // 1 / 1000 = 0 flow rate
+    let amounts = soroban_vec![&t.env, 1i128];
+    let lock_untils = soroban_vec![&t.env, 0u64];
 
     let result = c.try_batch_create_stream(
-        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false,
+        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &lock_untils,
     );
     assert_eq!(result, Err(Ok(StreamError::ZeroFlowRate)));
 }
@@ -1169,10 +1174,9 @@ fn error_token_mismatch() {
     let c = client(&t);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
 
-    // Create a different token
     let other_token_admin = Address::generate(&t.env);
     let other_token = t.env
         .register_stellar_asset_contract_v2(other_token_admin)
@@ -1188,10 +1192,11 @@ fn error_batch_length_mismatch() {
     let c = client(&t);
 
     let recipients = soroban_vec![&t.env, t.recipient.clone()];
-    let amounts = soroban_vec![&t.env, 10_000i128, 20_000i128]; // 2 amounts for 1 recipient
+    let amounts = soroban_vec![&t.env, 10_000i128, 20_000i128];
+    let lock_untils = soroban_vec![&t.env, 0u64, 0u64];
 
     let result = c.try_batch_create_stream(
-        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false,
+        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &lock_untils,
     );
     assert_eq!(result, Err(Ok(StreamError::BatchLengthMismatch)));
 }
@@ -1203,9 +1208,10 @@ fn error_zero_amount_in_batch() {
 
     let recipients = soroban_vec![&t.env, t.recipient.clone()];
     let amounts = soroban_vec![&t.env, 0i128];
+    let lock_untils = soroban_vec![&t.env, 0u64];
 
     let result = c.try_batch_create_stream(
-        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false,
+        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &lock_untils,
     );
     assert_eq!(result, Err(Ok(StreamError::ZeroAmount)));
 }
@@ -1216,7 +1222,7 @@ fn error_not_recipient_in_batch_withdraw() {
     let c = client(&t);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     let other = Address::generate(&t.env);
 
@@ -1229,67 +1235,28 @@ fn error_invalid_duration_fee_too_high() {
     let t = setup();
     let c = client(&t);
 
-    // set_protocol_fee reuses InvalidDuration for fee > 10_000
     let result = c.try_set_protocol_fee(&10_001u32);
     assert_eq!(result, Err(Ok(StreamError::InvalidDuration)));
 }
 
-// Dead code documentation:
-// - InsufficientBalance (7): Never returned. Token transfers panic via
-//   token::Client::transfer on insufficient balance. No contract code path
-//   returns this variant. Kept for potential future use with explicit
-//   balance checks.
-// - InvalidStartTime (12): Never returned. Stream start times are always
-//   set to env.ledger().timestamp(), not user-supplied. No code path
-//   returns this variant. Kept for potential future use with scheduled
-//   stream starts.
-
-pub fn fanout_create_stream(
-    _env: Env,
-    _sender: Address,
-    _recipients: Vec<Address>,
-    _weights: Vec<u32>,
-    _token: Address,
-    _total_amount: i128,
-    _duration_seconds: u64,
-    _cliff_seconds: u64,
-    _nonce: u64,
-    _auto_renew: bool,
-) -> Result<Vec<u64>, StreamError> {
-    todo!("fanout_create_stream not yet implemented")
-    use soroban_sdk::token::StellarAssetClient;
-    let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id,
-        &1_000, &1000, &0, &0u64, &false,
-    );
-    let huge: i128 = (u64::MAX as i128) + 1;
-    StellarAssetClient::new(&t.env, &t.token_id).mint(&t.sender, &huge);
-    let result = c.try_top_up(&stream_id, &t.sender, &huge);
-    assert!(result.is_err());
-}
-
 /// `top_up` where `end_time + extra_seconds` overflows u64 must return an error.
-/// end_time = u64::MAX exactly; top_up of 1 token adds 1 second → overflow.
 #[test]
 fn test_top_up_end_time_overflow() {
     let t = setup();
     let c = client(&t);
-    // now + duration = (u64::MAX - 1000) + 1000 = u64::MAX; flow_rate = 1.
     t.env.ledger().set_timestamp(u64::MAX - 1_000);
 
     use soroban_sdk::token::StellarAssetClient;
     let stream_id = c.create_stream(
         &t.sender, &t.recipient, &t.token_id,
-        &1_000, &1000, &0, &0u64, &false,
+        &1_000, &1000, &0, &0u64, &false, &0u64,
     );
     StellarAssetClient::new(&t.env, &t.token_id).mint(&t.sender, &1);
-    let result = c.try_top_up(&stream_id, &t.sender, &1);
+    let result = c.try_top_up(&stream_id, &t.sender, &t.token_id, &1);
     assert!(result.is_err());
 }
 
-/// `batch_create_stream` where accumulating amounts overflows i128 must return
-/// an error. Two amounts of 9×10^37 each sum to 1.8×10^38 > i128::MAX.
-/// Each is individually mintable; the overflow is caught in our accumulator.
+/// `batch_create_stream` where accumulating amounts overflows i128 must return an error.
 #[test]
 fn test_batch_create_total_amount_overflow() {
     let t = setup();
@@ -1303,6 +1270,7 @@ fn test_batch_create_total_amount_overflow() {
 
     let mut recipients = Vec::new(&t.env);
     let mut amounts: Vec<i128> = Vec::new(&t.env);
+    let lock_untils = soroban_vec![&t.env, 0u64, 0u64];
     recipients.push_back(Address::generate(&t.env));
     recipients.push_back(Address::generate(&t.env));
     amounts.push_back(a);
@@ -1310,7 +1278,7 @@ fn test_batch_create_total_amount_overflow() {
 
     StellarAssetClient::new(&t.env, &t.token_id).mint(&t.sender, &a);
     let result = c.try_batch_create_stream(
-        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false,
+        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &lock_untils,
     );
     assert!(result.is_err());
 }
