@@ -22,8 +22,9 @@ use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, Vec, Symb
 use storage::{
     check_admin, get_current_stream_id, get_ids_by_recipient, get_ids_by_sender,
     get_protocol_fee, get_treasury, index_by_recipient, index_by_sender, is_paused,
-    load_stream, mark_nonce_used, next_stream_id, nonce_used, read_admin, remove_stream, save_stream,
-    set_paused, set_protocol_fee, set_treasury, write_admin,
+    load_stream, mark_nonce_used, next_stream_id, nonce_used, read_admin, remove_stream,
+    save_stream, set_paused, set_protocol_fee, set_treasury, unindex_by_recipient,
+    unindex_by_sender, write_admin,
 };
 use types::{Stats, Stream, StreamStatus};
 
@@ -303,6 +304,8 @@ impl SoroStreamContract {
             } else {
                 events::stream_completed(&env, stream_id);
                 remove_stream(&env, stream_id);
+                unindex_by_sender(&env, &stream.sender, stream_id);
+                unindex_by_recipient(&env, &stream.recipient, stream_id);
             }
         } else {
             save_stream(&env, &stream);
@@ -320,7 +323,7 @@ impl SoroStreamContract {
     pub fn cancel_stream(env: Env, stream_id: u64, sender: Address) -> Result<(), StreamError> {
         sender.require_auth();
 
-        let mut stream = load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)?;
+        let stream = load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)?;
 
         if stream.sender != sender {
             return Err(StreamError::NotSender);
@@ -368,8 +371,9 @@ impl SoroStreamContract {
             token_client.transfer(&env.current_contract_address(), &sender, &refund_amount);
         }
 
-        stream.status = StreamStatus::Cancelled;
-        save_stream(&env, &stream);
+        remove_stream(&env, stream_id);
+        unindex_by_sender(&env, &stream.sender, stream_id);
+        unindex_by_recipient(&env, &stream.recipient, stream_id);
 
         events::stream_cancelled(&env, stream_id, &sender, refund_amount, recipient_amount);
 
@@ -872,6 +876,8 @@ impl SoroStreamContract {
                 } else {
                     events::stream_completed(&env, stream_id);
                     remove_stream(&env, stream_id);
+                    unindex_by_sender(&env, &stream.sender, stream_id);
+                    unindex_by_recipient(&env, &stream.recipient, stream_id);
                 }
             } else {
                 save_stream(&env, &stream);

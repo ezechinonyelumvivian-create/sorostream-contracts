@@ -132,8 +132,8 @@ fn test_cancel_stream_splits_correctly() {
     assert_eq!(recipient_bal, 30_000);
     assert_eq!(sender_bal, 970_000);
 
-    let stream = c.get_stream(&stream_id);
-    assert_eq!(stream.status, StreamStatus::Cancelled);
+    let result = c.try_get_stream(&stream_id);
+    assert!(result.is_err());
 }
 
 #[test]
