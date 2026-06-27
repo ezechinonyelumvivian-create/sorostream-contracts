@@ -1,14 +1,27 @@
 #![no_std]
 #![allow(clippy::too_many_arguments)]
+//! # SoroStream Contract
+//!
+//! A Soroban smart contract for creating and managing payment streams.
+//!
+//! The formal interface is defined in [`SoroStreamInterface`].
+
 // Make `std` available to test modules (host target is not no_std).
 #[cfg(test)]
 extern crate std;
 
 mod errors;
 mod events;
+mod interface;
 mod storage;
 mod types;
 pub mod vesting_math;
+
+pub use interface::SoroStreamInterface;
+
+// Re-export types needed by the interface
+pub use errors::StreamError;
+pub use types::{Stream, Stats, StreamStatus};
 
 #[cfg(test)]
 mod test;
@@ -940,5 +953,175 @@ impl SoroStreamContract {
             active_streams,
             total_volume,
         }
+    }
+}
+
+/// Implementation of the SoroStreamInterface trait for SoroStreamContract.
+///
+/// This implementation delegates to the corresponding contractimpl methods,
+/// providing type-safe invocation through the trait interface.
+impl SoroStreamInterface for SoroStreamContract {
+    fn initialize(env: Env, admin: Address) -> Result<(), StreamError> {
+        Self::initialize(env, admin)
+    }
+
+    fn get_admin(env: Env) -> Result<Address, StreamError> {
+        Self::get_admin(env)
+    }
+
+    fn set_admin(env: Env, new_admin: Address) -> Result<(), StreamError> {
+        Self::set_admin(env, new_admin)
+    }
+
+    fn emergency_pause(env: Env) -> Result<(), StreamError> {
+        Self::emergency_pause(env)
+    }
+
+    fn emergency_resume(env: Env) -> Result<(), StreamError> {
+        Self::emergency_resume(env)
+    }
+
+    fn is_paused(env: Env) -> bool {
+        Self::is_paused(env)
+    }
+
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), StreamError> {
+        Self::upgrade(env, new_wasm_hash)
+    }
+
+    fn create_stream(
+        env: Env,
+        sender: Address,
+        recipient: Address,
+        token: Address,
+        amount: i128,
+        duration_seconds: u64,
+        cliff_seconds: u64,
+        nonce: u64,
+        auto_renew: bool,
+        lock_until: u64,
+    ) -> Result<u64, StreamError> {
+        Self::create_stream(
+            env,
+            sender,
+            recipient,
+            token,
+            amount,
+            duration_seconds,
+            cliff_seconds,
+            nonce,
+            auto_renew,
+            lock_until,
+        )
+    }
+
+    fn withdraw(env: Env, stream_id: u64, recipient: Address) -> Result<(), StreamError> {
+        Self::withdraw(env, stream_id, recipient)
+    }
+
+    fn cancel_stream(env: Env, stream_id: u64, sender: Address) -> Result<(), StreamError> {
+        Self::cancel_stream(env, stream_id, sender)
+    }
+
+    fn partial_cancel_stream(
+        env: Env,
+        stream_id: u64,
+        sender: Address,
+        cancel_amount: i128,
+    ) -> Result<u64, StreamError> {
+        Self::partial_cancel_stream(env, stream_id, sender, cancel_amount)
+    }
+
+    fn top_up(
+        env: Env,
+        stream_id: u64,
+        sender: Address,
+        token: Address,
+        amount: i128,
+    ) -> Result<(), StreamError> {
+        Self::top_up(env, stream_id, sender, token, amount)
+    }
+
+    fn get_stream(env: Env, stream_id: u64) -> Result<Stream, StreamError> {
+        Self::get_stream(env, stream_id)
+    }
+
+    fn get_all_stream_ids(env: Env, start: u32, limit: u32) -> Vec<u64> {
+        Self::get_all_stream_ids(env, start, limit)
+    }
+
+    fn get_claimable(env: Env, stream_id: u64) -> Result<i128, StreamError> {
+        Self::get_claimable(env, stream_id)
+    }
+
+    fn is_participant(env: Env, stream_id: u64, address: Address) -> Result<bool, StreamError> {
+        Self::is_participant(env, stream_id, address)
+    }
+
+    fn get_streams_by_sender(env: Env, sender: Address, start: u32, limit: u32) -> Vec<Stream> {
+        Self::get_streams_by_sender(env, sender, start, limit)
+    }
+
+    fn get_streams_by_recipient(
+        env: Env,
+        recipient: Address,
+        start: u32,
+        limit: u32,
+    ) -> Vec<Stream> {
+        Self::get_streams_by_recipient(env, recipient, start, limit)
+    }
+
+    fn get_active_streams_by_sender(env: Env, sender: Address) -> Vec<Stream> {
+        Self::get_active_streams_by_sender(env, sender)
+    }
+
+    fn get_active_streams_by_recipient(env: Env, recipient: Address) -> Vec<Stream> {
+        Self::get_active_streams_by_recipient(env, recipient)
+    }
+
+    fn batch_create_stream(
+        env: Env,
+        sender: Address,
+        recipients: Vec<Address>,
+        amounts: Vec<i128>,
+        token: Address,
+        duration_seconds: u64,
+        auto_renew: bool,
+        lock_untils: Vec<u64>,
+    ) -> Result<Vec<u64>, StreamError> {
+        Self::batch_create_stream(
+            env,
+            sender,
+            recipients,
+            amounts,
+            token,
+            duration_seconds,
+            auto_renew,
+            lock_untils,
+        )
+    }
+
+    fn batch_withdraw(
+        env: Env,
+        stream_ids: Vec<u64>,
+        recipient: Address,
+    ) -> Result<Vec<i128>, StreamError> {
+        Self::batch_withdraw(env, stream_ids, recipient)
+    }
+
+    fn set_protocol_fee(env: Env, fee_bps: u32) -> Result<(), StreamError> {
+        Self::set_protocol_fee(env, fee_bps)
+    }
+
+    fn set_treasury_address(env: Env, treasury: Address) -> Result<(), StreamError> {
+        Self::set_treasury_address(env, treasury)
+    }
+
+    fn get_protocol_fee_info(env: Env) -> (u32, Option<Address>) {
+        Self::get_protocol_fee_info(env)
+    }
+
+    fn get_stats(env: Env) -> Stats {
+        Self::get_stats(env)
     }
 }

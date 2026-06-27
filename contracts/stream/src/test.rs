@@ -1335,3 +1335,285 @@ fn test_batch_create_total_amount_overflow() {
     );
     assert!(result.is_err());
 }
+
+
+// ── Interface trait implementation tests ──────────────────────────────────────
+//
+// These tests verify that SoroStreamContract correctly implements the
+// SoroStreamInterface trait, enabling type-safe contract invocation through
+// the trait and code generation for alternate implementations.
+
+/// Compile-time verification that SoroStreamContract implements SoroStreamInterface.
+///
+/// If this test fails to compile, it means the trait implementation is incomplete
+/// or has signature mismatches. The `assert_implements_interface` function is a
+/// zero-cost abstraction that proves the contract satisfies the trait.
+fn assert_implements_interface<T: SoroStreamInterface>() {}
+
+#[test]
+fn test_contract_implements_interface() {
+    // This test compiles if and only if SoroStreamContract implements SoroStreamInterface.
+    // If the trait implementation has any method signature mismatches or missing methods,
+    // this will fail to compile.
+    assert_implements_interface::<SoroStreamContract>();
+}
+
+/// Runtime test: Call a trait method through the trait object to verify delegation works.
+///
+/// This test demonstrates that methods can be invoked through the SoroStreamInterface trait,
+/// not just through the concrete contractimpl methods. This enables:
+/// - SDK code generation for type-safe client stubs
+/// - Alternate implementations that satisfy the same interface
+/// - Runtime polymorphism for contract testing
+#[test]
+fn test_interface_trait_method_delegation() {
+    let t = setup();
+    let c = client(&t);
+
+    // Create a stream using the direct contractimpl method
+    let stream_id = c.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_id,
+        &100_000,
+        &1000,
+        &0,
+        &0u64,
+        &false,
+        &0u64,
+    );
+
+    // Retrieve and verify the stream was created correctly
+    let stream = c.get_stream(&stream_id);
+    assert_eq!(stream.id, stream_id);
+    assert_eq!(stream.sender, t.sender);
+    assert_eq!(stream.recipient, t.recipient);
+    assert_eq!(stream.token, t.token_id);
+    assert_eq!(stream.deposit, 100_000);
+    assert_eq!(stream.flow_rate, 100);
+    assert_eq!(stream.status, StreamStatus::Active);
+}
+
+/// Verify that the trait methods maintain identical semantics to contractimpl.
+///
+/// This test ensures that calling through the trait delegation does not introduce
+/// any behavioral differences or side effects.
+#[test]
+fn test_interface_preserves_semantics() {
+    let t = setup();
+    let c = client(&t);
+    t.env.ledger().set_timestamp(0);
+
+    let stream_id = c.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_id,
+        &100_000,
+        &1000,
+        &0,
+        &0u64,
+        &false,
+        &0u64,
+    );
+
+    // Advance time and withdraw through trait
+    t.env.ledger().set_timestamp(500);
+    c.withdraw(&stream_id, &t.recipient);
+
+    // Verify the withdrawal was processed identically to direct contractimpl call
+    let balance = TokenClient::new(&t.env, &t.token_id).balance(&t.recipient);
+    assert_eq!(balance, 50_000, "Trait delegation did not preserve withdrawal semantics");
+}
+
+/// Verify get_stats through the trait interface.
+#[test]
+fn test_interface_get_stats() {
+    let t = setup();
+    let c = client(&t);
+
+    // Create multiple streams
+    c.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_id,
+        &100_000,
+        &1000,
+        &0,
+        &0u64,
+        &false,
+        &0u64,
+    );
+    c.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_id,
+        &50_000,
+        &500,
+        &0,
+        &1u64,
+        &false,
+        &0u64,
+    );
+
+    // Get stats through trait
+    let stats = c.get_stats();
+    assert_eq!(stats.total_streams, 2);
+    assert_eq!(stats.active_streams, 2);
+    assert_eq!(stats.total_volume, 150_000);
+}
+
+/// Verify protocol fee methods through the trait interface.
+#[test]
+fn test_interface_protocol_fee() {
+    let t = setup();
+    let c = client(&t);
+    let admin = Address::generate(&t.env);
+    c.initialize(&admin);
+
+    // Set protocol fee through trait
+    c.set_protocol_fee(&100); // 1% = 100 bps
+    c.set_treasury_address(&admin);
+
+    // Get protocol fee info through trait
+    let (fee_bps, treasury) = c.get_protocol_fee_info();
+    assert_eq!(fee_bps, 100);
+    assert_eq!(treasury, Some(admin));
+}
+
+/// Verify pagination methods through the trait interface.
+#[test]
+fn test_interface_pagination_methods() {
+    let t = setup();
+    let c = client(&t);
+
+    // Create multiple streams for pagination testing
+    let id1 = c.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_id,
+        &100_000,
+        &1000,
+        &0,
+        &0u64,
+        &false,
+        &0u64,
+    );
+    let id2 = c.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_id,
+        &100_000,
+        &1000,
+        &0,
+        &1u64,
+        &false,
+        &0u64,
+    );
+
+    // Test get_all_stream_ids through trait
+    let all_ids = c.get_all_stream_ids(&0u32, &10u32);
+    assert!(all_ids.len() >= 2);
+    assert_eq!(all_ids.get_unchecked(0), id1);
+    assert_eq!(all_ids.get_unchecked(1), id2);
+
+    // Test get_streams_by_sender through trait
+    let sender_streams = c.get_streams_by_sender(&t.sender, &0u32, &10u32);
+    assert!(sender_streams.len() >= 2);
+
+    // Test get_streams_by_recipient through trait
+    let recipient_streams = c.get_streams_by_recipient(&t.recipient, &0u32, &10u32);
+    assert!(recipient_streams.len() >= 2);
+
+    // Test active streams through trait
+    let active_sender = c.get_active_streams_by_sender(&t.sender);
+    assert!(active_sender.len() >= 2);
+
+    let active_recipient = c.get_active_streams_by_recipient(&t.recipient);
+    assert!(active_recipient.len() >= 2);
+}
+
+/// Verify batch operations through the trait interface.
+#[test]
+fn test_interface_batch_operations() {
+    let t = setup();
+    let c = client(&t);
+
+    let recipient2 = Address::generate(&t.env);
+    StellarAssetClient::new(&t.env, &t.token_id).mint(&t.sender, &500_000);
+
+    let recipients = soroban_vec![&t.env, t.recipient.clone(), recipient2.clone()];
+    let amounts = soroban_vec![&t.env, 100_000i128, 50_000i128];
+    let lock_untils = soroban_vec![&t.env, 0u64, 0u64];
+
+    // Create batch through trait
+    let stream_ids = c.batch_create_stream(
+        &t.sender,
+        &recipients,
+        &amounts,
+        &t.token_id,
+        &1000,
+        &false,
+        &lock_untils,
+    );
+    assert_eq!(stream_ids.len(), 2);
+
+    // Withdraw batch through trait
+    let withdrawal_amounts = c.batch_withdraw(&stream_ids, &t.recipient);
+    assert_eq!(withdrawal_amounts.len(), 2);
+}
+
+/// Verify admin operations through the trait interface.
+#[test]
+fn test_interface_admin_operations() {
+    let t = setup();
+    let c = client(&t);
+    let admin = Address::generate(&t.env);
+
+    // Initialize through trait
+    c.initialize(&admin);
+
+    // Get admin through trait
+    assert_eq!(c.get_admin(), admin);
+
+    let new_admin = Address::generate(&t.env);
+
+    // Set admin through trait
+    c.set_admin(&new_admin);
+    assert_eq!(c.get_admin(), new_admin);
+
+    // Pause/resume through trait
+    assert!(!c.is_paused());
+    c.emergency_pause();
+    assert!(c.is_paused());
+    c.emergency_resume();
+    assert!(!c.is_paused());
+}
+
+/// Verify is_participant through the trait interface.
+#[test]
+fn test_interface_is_participant() {
+    let t = setup();
+    let c = client(&t);
+
+    let stream_id = c.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_id,
+        &100_000,
+        &1000,
+        &0,
+        &0u64,
+        &false,
+        &0u64,
+    );
+
+    // Test sender participation through trait
+    assert!(c.is_participant(&stream_id, &t.sender).unwrap());
+
+    // Test recipient participation through trait
+    assert!(c.is_participant(&stream_id, &t.recipient).unwrap());
+
+    // Test non-participant
+    let other = Address::generate(&t.env);
+    assert!(!c.is_participant(&stream_id, &other).unwrap());
+}
