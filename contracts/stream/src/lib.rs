@@ -13,6 +13,8 @@ mod types;
 mod test;
 #[cfg(test)]
 mod cost_bench;
+#[cfg(test)]
+mod storage_bench;
 
 use errors::StreamError;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, Vec};

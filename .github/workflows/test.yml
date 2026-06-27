@@ -20,3 +20,5 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
       - name: Test
         run: cargo test
+      - name: Storage baseline regression check
+        run: cargo test --package sorostream-stream -- storage_bench::check_storage_baseline_regression --nocapture
