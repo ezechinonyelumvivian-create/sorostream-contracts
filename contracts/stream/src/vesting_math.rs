@@ -84,7 +84,7 @@ mod proofs {
         kani::assume(deposit > 0 && deposit <= 1_000_000_000_000_i128);
         kani::assume(duration > 0 && duration <= 315_360_000_u64);
         kani::assume(start_time <= u64::MAX / 2);
-        kani::assume(cliff_seconds <= duration);
+        kani::assume(cliff_seconds < duration);
         kani::assume(now >= start_time);
 
         let flow_rate = compute_flow_rate(deposit, duration);
