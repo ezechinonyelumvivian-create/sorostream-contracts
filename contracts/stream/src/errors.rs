@@ -47,4 +47,30 @@ pub enum StreamError {
     StreamLocked = 19,
     /// Caller is not authorized.
     NotAuthorized = 20,
+    /// Amount is too small relative to duration: would produce a zero flow rate.
+    ZeroFlowRate = 15,
+    /// Batch recipients and amounts vectors have different lengths.
+    BatchLengthMismatch = 16,
+    /// Token address does not match the stream's token.
+    TokenMismatch = 17,
+    /// Stream is locked and cannot be withdrawn from yet.
+    StreamLocked = 18,
+    /// A numeric operation overflowed or produced an out-of-range value.
+    /// This is returned instead of panicking when user-controllable inputs
+    /// (e.g. very large amounts or durations) would cause integer overflow.
+    Overflow = 19,
+    /// Stream is not paused.
+    StreamNotPaused = 20,
+    /// A withdrawal was attempted before the stream's lock_until timestamp.
+    StreamLocked = 18,
+    /// A numeric operation overflowed or produced an out-of-range value.
+    /// This is returned instead of panicking when user-controllable inputs
+    /// (e.g. very large amounts or durations) would cause integer overflow.
+    Overflow = 19,
+    /// A numeric operation overflowed or produced an out-of-range value.
+    /// This is returned instead of panicking when user-controllable inputs
+    /// (e.g. very large amounts or durations) would cause integer overflow.
+    Overflow = 18,
+    /// Stream is locked until the lock_until timestamp.
+    StreamLocked = 19,
 }
