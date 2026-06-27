@@ -33,6 +33,8 @@ pub enum StreamError {
     InvalidPartialCancel = 13,
     /// Operation is not allowed while the contract is paused.
     ContractPaused = 14,
-    /// Amount is too small relative to duration: would produce a zero flow rate.
-    ZeroFlowRate = 15,
+    /// A numeric operation overflowed or produced an out-of-range value.
+    /// This is returned instead of panicking when user-controllable inputs
+    /// (e.g. very large amounts or durations) would cause integer overflow.
+    Overflow = 15,
 }
