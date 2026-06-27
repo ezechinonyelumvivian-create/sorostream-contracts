@@ -84,6 +84,9 @@
                 },
                 {
                   "bool": false
+                },
+                {
+                  "u64": 0
                 }
               ]
             }
@@ -151,6 +154,9 @@
                 },
                 {
                   "bool": false
+                },
+                {
+                  "u64": 0
                 }
               ]
             }
@@ -218,6 +224,9 @@
                 },
                 {
                   "bool": false
+                },
+                {
+                  "u64": 0
                 }
               ]
             }
@@ -285,6 +294,9 @@
                 },
                 {
                   "bool": false
+                },
+                {
+                  "u64": 0
                 }
               ]
             }
@@ -352,6 +364,9 @@
                 },
                 {
                   "bool": false
+                },
+                {
+                  "u64": 0
                 }
               ]
             }
@@ -573,10 +588,26 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
                         "u64": 500
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "lock_until"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -711,10 +742,26 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
                         "u64": 500
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "lock_until"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -849,10 +896,26 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
                         "u64": 500
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "lock_until"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -987,10 +1050,26 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
                         "u64": 500
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "lock_until"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -1125,10 +1204,26 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
                         "u64": 500
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "lock_until"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {

@@ -71,7 +71,7 @@ fn integration_full_lifecycle() {
         &1000,
         &0,
         &0u64,
-        &false,
+        &false, &0u64,
     );
 
     assert_eq!(balance(&ie, &ie.sender), 0);
@@ -117,7 +117,7 @@ fn integration_lifecycle_with_cliff() {
         &1000,
         &500,
         &0u64,
-        &false,
+        &false, &0u64,
     );
 
     // Before cliff: claimable is zero
@@ -160,7 +160,7 @@ fn integration_create_cancel_split() {
         &1000,
         &0,
         &0u64,
-        &false,
+        &false, &0u64,
     );
 
     ie.env.ledger().set_timestamp(400);
@@ -196,7 +196,7 @@ fn integration_topup_extends_and_pays() {
         &1000,
         &0,
         &0u64,
-        &false,
+        &false, &0u64,
     );
 
     // Top up at t=200 with 500_000 more
@@ -244,7 +244,7 @@ fn integration_treasury_fees_on_batch_withdraw() {
         &1000,
         &0,
         &0u64,
-        &false,
+        &false, &0u64,
     );
 
     ie.env.ledger().set_timestamp(500);
@@ -284,7 +284,7 @@ fn integration_zero_fee_no_treasury_deduction() {
         &1000,
         &0,
         &0u64,
-        &false,
+        &false, &0u64,
     );
 
     ie.env.ledger().set_timestamp(500);
@@ -314,7 +314,7 @@ fn integration_batch_create_withdraw_lifecycle() {
         &amounts,
         &ie.token,
         &1000,
-        &false,
+        &false, &0u64,
     );
 
     assert_eq!(stream_ids.len(), 2);
@@ -352,7 +352,7 @@ fn integration_multi_stream_interleaved() {
         &1000,
         &0,
         &0u64,
-        &false,
+        &false, &0u64,
     );
     let s2 = c.create_stream(
         &ie.sender,
@@ -362,7 +362,7 @@ fn integration_multi_stream_interleaved() {
         &2000,
         &0,
         &1u64,
-        &false,
+        &false, &0u64,
     );
 
     // t=500: withdraw from both
@@ -414,7 +414,7 @@ fn integration_partial_cancel_lifecycle() {
         &1000,
         &0,
         &0u64,
-        &false,
+        &false, &0u64,
     );
 
     // At t=200, partial cancel reclaiming 300_000
@@ -471,7 +471,7 @@ fn integration_auto_renew_with_sac() {
     env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
-        &sender, &recipient, &token, &1_000_000, &1000, &0, &0u64, &true,
+        &sender, &recipient, &token, &1_000_000, &1000, &0, &0u64, &true, &0u64,
     );
 
     // Complete first cycle
@@ -503,13 +503,13 @@ fn integration_query_streams_by_sender_recipient() {
     let r2 = Address::generate(&ie.env);
 
     let s1 = c.create_stream(
-        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &0u64, &false,
+        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &0u64, &false, &0u64,
     );
     let s2 = c.create_stream(
-        &ie.sender, &r2, &ie.token, &1_000_000, &1000, &0, &1u64, &false,
+        &ie.sender, &r2, &ie.token, &1_000_000, &1000, &0, &1u64, &false, &0u64,
     );
     let s3 = c.create_stream(
-        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &2u64, &false,
+        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &2u64, &false, &0u64,
     );
 
     // By sender: should find all 3
@@ -542,10 +542,10 @@ fn integration_stats_reflect_lifecycle() {
     mint(&ie, &ie.sender, &5_000_000);
 
     c.create_stream(
-        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &0u64, &false,
+        &ie.sender, &ie.recipient, &ie.token, &1_000_000, &1000, &0, &0u64, &false, &0u64,
     );
     c.create_stream(
-        &ie.sender, &ie.recipient, &ie.token, &2_000_000, &2000, &0, &1u64, &false,
+        &ie.sender, &ie.recipient, &ie.token, &2_000_000, &2000, &0, &1u64, &false, &0u64,
     );
 
     let stats = c.get_stats();

@@ -529,6 +529,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -671,6 +679,14 @@
                       },
                       "val": {
                         "u64": 1
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -821,6 +837,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -963,6 +987,14 @@
                       },
                       "val": {
                         "u64": 3
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -1113,6 +1145,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -1255,6 +1295,14 @@
                       },
                       "val": {
                         "u64": 5
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -1405,6 +1453,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -1547,6 +1603,14 @@
                       },
                       "val": {
                         "u64": 7
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -1697,6 +1761,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -1839,6 +1911,14 @@
                       },
                       "val": {
                         "u64": 9
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -1989,6 +2069,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -2131,6 +2219,14 @@
                       },
                       "val": {
                         "u64": 11
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -2281,6 +2377,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -2423,6 +2527,14 @@
                       },
                       "val": {
                         "u64": 13
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -2573,6 +2685,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -2715,6 +2835,14 @@
                       },
                       "val": {
                         "u64": 15
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -2865,6 +2993,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -3007,6 +3143,14 @@
                       },
                       "val": {
                         "u64": 17
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
@@ -3157,6 +3301,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "last_withdraw_time"
                       },
                       "val": {
@@ -3299,6 +3451,14 @@
                       },
                       "val": {
                         "u64": 19
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_pause_time"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {
