@@ -57,7 +57,7 @@
           "function": {
             "contract_fn": {
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
-              "function_name": "pause",
+              "function_name": "emergency_pause",
               "args": []
             }
           },
@@ -72,7 +72,7 @@
           "function": {
             "contract_fn": {
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
-              "function_name": "unpause",
+              "function_name": "emergency_resume",
               "args": []
             }
           },
@@ -115,6 +115,9 @@
                 },
                 {
                   "bool": false
+                },
+                {
+                  "u64": 0
                 }
               ]
             }
@@ -299,6 +302,14 @@
                     {
                       "key": {
                         "symbol": "last_withdraw_time"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "lock_until"
                       },
                       "val": {
                         "u64": 0

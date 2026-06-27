@@ -52,7 +52,7 @@ fn test_create_stream_success() {
     let t = setup();
     let c = client(&t);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
     assert_eq!(stream_id, 0);
 
     let stream = c.get_stream(&stream_id);
@@ -66,9 +66,9 @@ fn test_get_all_stream_ids_enumerates_globally() {
     let t = setup();
     let c = client(&t);
 
-    let first_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
-    let second_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &1u64, &false);
-    let third_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &2u64, &false);
+    let first_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
+    let second_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &1u64, &false, &0u64);
+    let third_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &2u64, &false, &0u64);
 
     let all_ids = c.get_all_stream_ids(&0u32, &10u32);
     assert_eq!(all_ids.len(), 3);
@@ -88,7 +88,7 @@ fn test_withdraw_partial() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
 
     t.env.ledger().set_timestamp(500);
     c.withdraw(&stream_id, &t.recipient);
@@ -103,7 +103,7 @@ fn test_withdraw_full() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
 
     t.env.ledger().set_timestamp(1000);
     c.withdraw(&stream_id, &t.recipient);
@@ -121,7 +121,7 @@ fn test_cancel_stream_splits_correctly() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
 
     t.env.ledger().set_timestamp(300);
     c.cancel_stream(&stream_id, &t.sender);
@@ -142,7 +142,7 @@ fn test_top_up_extends_duration() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
     let stream_before = c.get_stream(&stream_id);
 
     c.top_up(&stream_id, &t.sender, &t.token_id, &50_000);
@@ -170,7 +170,7 @@ fn test_auto_renew_restarts_on_completion() {
     let c = SoroStreamContractClient::new(&env, &contract_id);
     env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&sender, &recipient, &token_id, &100_000, &1000, &0, &0u64, &true);
+    let stream_id = c.create_stream(&sender, &recipient, &token_id, &100_000, &1000, &0, &0u64, &true, &0u64);
 
     env.ledger().set_timestamp(1000);
     c.withdraw(&stream_id, &recipient);
@@ -187,7 +187,7 @@ fn test_cannot_withdraw_if_not_recipient() {
     let t = setup();
     let c = client(&t);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
     let other = Address::generate(&t.env);
 
     let result = c.try_withdraw(&stream_id, &other);
@@ -199,7 +199,7 @@ fn test_cannot_cancel_if_not_sender() {
     let t = setup();
     let c = client(&t);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
     let other = Address::generate(&t.env);
 
     let result = c.try_cancel_stream(&stream_id, &other);
@@ -211,7 +211,7 @@ fn test_zero_amount_fails() {
     let t = setup();
     let c = client(&t);
 
-    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &0, &1000, &0, &0u64, &false);
+    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &0, &1000, &0, &0u64, &false, &0u64);
     assert!(result.is_err());
 }
 
@@ -221,7 +221,7 @@ fn test_get_claimable_calculates_correctly() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
 
     t.env.ledger().set_timestamp(250);
     let claimable = c.get_claimable(&stream_id);
@@ -239,7 +239,7 @@ fn test_cliff_pre_cliff_returns_zero() {
     t.env.ledger().set_timestamp(0);
 
     // cliff at t=500, end at t=1000
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &0u64, &false, &0u64);
 
     t.env.ledger().set_timestamp(499);
     assert_eq!(c.get_claimable(&stream_id), 0);
@@ -253,7 +253,7 @@ fn test_cliff_at_cliff_returns_accrued() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &0u64, &false, &0u64);
 
     t.env.ledger().set_timestamp(500);
     assert_eq!(c.get_claimable(&stream_id), 50_000);
@@ -266,7 +266,7 @@ fn test_cliff_post_cliff_linear() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &0u64, &false, &0u64);
 
     t.env.ledger().set_timestamp(750);
     assert_eq!(c.get_claimable(&stream_id), 75_000);
@@ -279,7 +279,7 @@ fn test_cliff_withdraw_pre_cliff_transfers_nothing() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &0u64, &false, &0u64);
 
     t.env.ledger().set_timestamp(300);
     c.withdraw(&stream_id, &t.recipient);
@@ -294,7 +294,7 @@ fn test_cliff_exceeds_duration_fails() {
     let t = setup();
     let c = client(&t);
 
-    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &1001, &0u64, &false);
+    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &1001, &0u64, &false, &0u64);
     assert!(result.is_err());
 }
 
@@ -338,7 +338,7 @@ fn test_admin_persists_across_calls() {
     let admin = Address::generate(&t.env);
     c.initialize(&admin);
     // Interleave unrelated contract calls and re-check admin
-    c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
     assert_eq!(c.get_admin(), admin);
 }
 
@@ -349,9 +349,9 @@ fn test_admin_can_pause_and_unpause() {
     let admin = Address::generate(&t.env);
     c.initialize(&admin);
     assert!(!c.is_paused());
-    c.pause();
+    c.emergency_pause();
     assert!(c.is_paused());
-    c.unpause();
+    c.emergency_resume();
     assert!(!c.is_paused());
 }
 
@@ -361,8 +361,8 @@ fn test_create_stream_blocked_when_paused() {
     let c = client(&t);
     let admin = Address::generate(&t.env);
     c.initialize(&admin);
-    c.pause();
-    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    c.emergency_pause();
+    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
     assert!(result.is_err());
 }
 
@@ -372,9 +372,9 @@ fn test_create_stream_works_after_unpause() {
     let c = client(&t);
     let admin = Address::generate(&t.env);
     c.initialize(&admin);
-    c.pause();
-    c.unpause();
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false);
+    c.emergency_pause();
+    c.emergency_resume();
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64);
     assert_eq!(stream_id, 0);
 }
 
@@ -385,8 +385,8 @@ fn test_pause_rejected_for_non_admin() {
     let admin = Address::generate(&t.env);
     c.initialize(&admin);
     t.env.set_auths(&[]);
-    assert!(c.try_pause().is_err());
-    assert!(c.try_unpause().is_err());
+    assert!(c.try_emergency_pause().is_err());
+    assert!(c.try_emergency_resume().is_err());
 }
 
 /// After passing cliff, tokens accumulate from stream start (not from cliff).
@@ -397,7 +397,7 @@ fn test_cliff_accrual_restarts_after_withdrawal() {
     let c = client(&t);
     t.env.ledger().set_timestamp(0);
 
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &500, &0u64, &false, &0u64);
 
     // At cliff: 500 * 100 = 50_000 claimable
     t.env.ledger().set_timestamp(500);
@@ -417,7 +417,7 @@ fn test_claimable_zero_before_cliff() {
     t.env.ledger().set_timestamp(0);
 
     // cliff at t=800 within a 1000s stream
-    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &800, &0u64, &false);
+    let stream_id = c.create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &1000, &800, &0u64, &false, &0u64);
 
     // at t=500, still before cliff → 0 claimable
     t.env.ledger().set_timestamp(500);
@@ -430,7 +430,7 @@ fn test_zero_duration_fails() {
     let t = setup();
     let c = client(&t);
 
-    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &0, &0, &0u64, &false);
+    let result = c.try_create_stream(&t.sender, &t.recipient, &t.token_id, &100_000, &0, &0, &0u64, &false, &0u64);
     assert!(result.is_err());
 }
 

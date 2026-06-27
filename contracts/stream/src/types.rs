@@ -32,6 +32,8 @@ pub struct Stream {
     pub start_time: u64,
     /// Ledger timestamp before which no tokens are claimable (>= start_time, <= end_time).
     pub cliff_time: u64,
+    /// Ledger timestamp before which no withdrawals are permitted (>= start_time, <= end_time).
+    pub lock_until: u64,
     /// Ledger timestamp when the stream ends.
     pub end_time: u64,
     /// Ledger timestamp of the last withdrawal.

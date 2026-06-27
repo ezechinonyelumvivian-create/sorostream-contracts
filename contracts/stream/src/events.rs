@@ -86,3 +86,19 @@ pub fn stream_partial_cancelled(
         (new_stream_id, sender.clone(), refund_amount, new_deposit),
     );
 }
+
+/// Emitted when the contract is paused during an emergency.
+pub fn contract_paused(env: &Env, admin: &Address, timestamp: u64) {
+    env.events().publish(
+        (Symbol::new(env, "ContractPaused"), admin.clone()),
+        timestamp,
+    );
+}
+
+/// Emitted when the contract is resumed after an emergency pause.
+pub fn contract_resumed(env: &Env, admin: &Address, timestamp: u64) {
+    env.events().publish(
+        (Symbol::new(env, "ContractResumed"), admin.clone()),
+        timestamp,
+    );
+}
