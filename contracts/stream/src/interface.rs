@@ -34,7 +34,7 @@
 //! }
 //! ```
 
-use soroban_sdk::{Address, BytesN, Env, Vec};
+use soroban_sdk::{contractclient, Address, BytesN, Env, Vec};
 
 use crate::errors::StreamError;
 use crate::types::{Stats, Stream};
@@ -507,4 +507,11 @@ pub trait SoroStreamInterface {
     /// - `active_streams`: Number of currently active streams
     /// - `total_volume`: Sum of all stream deposits (saturating arithmetic)
     fn get_stats(env: Env) -> Stats;
+
+    /// Returns the minimum stream duration in seconds.
+    fn min_duration(env: Env) -> u64;
+
+    /// Sets the minimum stream duration in seconds.
+    /// Only the admin may call this.
+    fn set_min_duration(env: Env, admin: Address, seconds: u64);
 }

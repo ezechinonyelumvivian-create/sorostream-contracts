@@ -41,6 +41,9 @@ fn setup() -> StorageBenchEnv {
 
     StellarAssetClient::new(&env, &token_id).mint(&sender, &10_000_000);
 
+    // Disable minimum duration for tests
+    SoroStreamContractClient::new(&env, &contract_id).set_min_duration(&sender, &0u64);
+
     StorageBenchEnv {
         env,
         contract_id,
@@ -159,7 +162,6 @@ fn generate_storage_baseline() {
         let lock_untils = soroban_sdk::vec![&b.env, 0u64, 0u64, 0u64, 0u64, 0u64];
         cl.batch_create_stream(
             &b.sender, &recipients, &amounts, &b.token_id, &1000, &false, &lock_untils,
-            &b.sender, &recipients, &amounts, &b.token_id, &1000, &false, &soroban_sdk::vec![&b.env, 0u64, 0u64, 0u64, 0u64, 0u64],
         );
         results.push(measure(&b.env, "batch_create_stream_n5"));
     }
@@ -320,7 +322,6 @@ fn check_storage_baseline_regression() {
         let lock_untils = soroban_sdk::vec![&b.env, 0u64, 0u64, 0u64, 0u64, 0u64];
         cl.batch_create_stream(
             &b.sender, &recipients, &amounts, &b.token_id, &1000, &false, &lock_untils,
-            &b.sender, &recipients, &amounts, &b.token_id, &1000, &false, &soroban_sdk::vec![&b.env, 0u64, 0u64, 0u64, 0u64, 0u64],
         );
         current.push(("batch_create_stream_n5", measure(&b.env, "batch_create_stream_n5")));
     }

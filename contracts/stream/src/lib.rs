@@ -34,16 +34,20 @@ mod integration_tests;
 #[cfg(test)]
 mod testnet_integration_tests;
 
-use errors::StreamError;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, Vec, Symbol, IntoVal};
 use storage::{
     check_admin, get_current_stream_id, get_ids_by_recipient, get_ids_by_sender,
     get_protocol_fee, get_treasury, index_by_recipient, index_by_sender, is_paused,
-    load_stream, mark_nonce_used, next_stream_id, nonce_used, read_admin, remove_stream,
-    save_stream, set_paused, set_protocol_fee, set_treasury, unindex_by_recipient,
-    unindex_by_sender, write_admin, set_delegate, get_delegate, remove_delegate,
+    load_stream, mark_nonce_used, next_stream_id, nonce_used, read_admin,
+    read_min_duration, remove_stream, save_stream, set_paused, set_protocol_fee,
+    set_treasury, unindex_by_recipient, unindex_by_sender, write_admin,
+    write_min_duration, set_delegate, get_delegate, remove_delegate,
 };
-use types::{Stats, Stream, StreamStatus};
+/// Computes `flow_rate * elapsed` with overflow checking.
+/// Returns `StreamError::Overflow` if the multiplication overflows `i128`.
+fn checked_flow_amount(flow_rate: i128, elapsed: u64) -> Result<i128, StreamError> {
+    flow_rate.checked_mul(elapsed as i128).ok_or(StreamError::Overflow)
+}
 
 #[contract]
 pub struct SoroStreamContract;
@@ -166,6 +170,11 @@ impl SoroStreamContract {
             return Err(StreamError::InvalidCliff);
         }
 
+        let min_dur = read_min_duration(&env);
+        if duration_seconds < min_dur {
+            return Err(StreamError::StreamDurationTooShort);
+        }
+
         let flow_rate = amount / duration_seconds as i128;
         if flow_rate == 0 {
             return Err(StreamError::ZeroFlowRate);
@@ -207,6 +216,7 @@ impl SoroStreamContract {
             status: StreamStatus::Active,
             auto_renew,
             last_pause_time: 0,
+            total_withdrawn: 0,
         };
 
         save_stream(&env, &stream);
@@ -218,6 +228,18 @@ impl SoroStreamContract {
         );
 
         Ok(stream_id)
+    }
+
+    /// Returns the minimum allowed stream duration in seconds.
+    pub fn min_duration(env: Env) -> u64 {
+        read_min_duration(&env)
+    }
+
+    /// Sets the minimum allowed stream duration in seconds.
+    /// Only the admin may call this.
+    pub fn set_min_duration(env: Env, admin: Address, seconds: u64) {
+        admin.require_auth();
+        write_min_duration(&env, seconds);
     }
 
     /// Allows the recipient to withdraw all tokens earned since last withdrawal.
@@ -258,6 +280,14 @@ impl SoroStreamContract {
         ).ok_or(StreamError::Overflow)?;
 
         if claimable > 0 {
+            if stream.total_withdrawn
+                .checked_add(claimable)
+                .ok_or(StreamError::Overflow)?
+                > stream.deposit
+            {
+                return Err(StreamError::Overflow);
+            }
+
             let fee_bps = get_protocol_fee(&env);
             // fee_bps ≤ 10_000 (validated in set_protocol_fee), so
             // claimable * fee_bps fits in i128 as long as claimable < i128::MAX / 10_000.
@@ -291,6 +321,11 @@ impl SoroStreamContract {
                     events::fee_collected(&env, stream_id, fee_amount, &treasury);
                 }
             }
+
+            stream.total_withdrawn = stream
+                .total_withdrawn
+                .checked_add(claimable)
+                .ok_or(StreamError::Overflow)?;
 
             let _ = env.try_invoke_contract::<(), soroban_sdk::Error>(
                 &recipient,
@@ -328,6 +363,7 @@ impl SoroStreamContract {
                     stream.start_time = stream.end_time;
                     stream.end_time = new_end;
                     stream.last_withdraw_time = stream.start_time;
+                    stream.total_withdrawn = 0;
                     save_stream(&env, &stream);
                 }
                 save_stream(&env, &stream);
@@ -365,27 +401,11 @@ impl SoroStreamContract {
             return Err(StreamError::StreamNotActive);
         }
 
-        let now = env.ledger().timestamp();
-        let effective_now = now.min(stream.end_time);
         let now = if stream.status == StreamStatus::Paused {
             stream.last_pause_time
         } else {
             env.ledger().timestamp()
         };
-        let recipient_amount = vesting_math::compute_earned(
-            stream.flow_rate,
-            now,
-            stream.end_time,
-            stream.last_withdraw_time,
-        );
-        let refund_amount = vesting_math::compute_refund(
-            stream.deposit,
-            stream.flow_rate,
-            now,
-            stream.end_time,
-            stream.start_time,
-        );
-        let now = env.ledger().timestamp();
 
         let recipient_amount = vesting_math::compute_earned(
             stream.flow_rate, now, stream.end_time, stream.last_withdraw_time,
@@ -448,9 +468,6 @@ impl SoroStreamContract {
             return Err(StreamError::ZeroAmount);
         }
 
-        let now = env.ledger().timestamp();
-        let effective_now = now.min(stream.end_time);
-
         let now = if stream.status == StreamStatus::Paused {
             stream.last_pause_time
         } else {
@@ -458,14 +475,6 @@ impl SoroStreamContract {
         };
 
         let effective_now = now.min(stream.end_time);
-
-        // Total streamed so far from start (already paid out in previous withdrawals + earned now).
-        let total_streamed = vesting_math::compute_total_streamed(
-            stream.flow_rate,
-            now,
-            stream.end_time,
-            stream.start_time,
-        );
         // Tokens earned since last withdrawal.
         let elapsed_since_withdraw = now.saturating_sub(stream.last_withdraw_time);
         let earned = checked_flow_amount(stream.flow_rate, elapsed_since_withdraw)?;
@@ -520,6 +529,7 @@ impl SoroStreamContract {
             status: StreamStatus::Active,
             auto_renew: stream.auto_renew,
             last_pause_time: 0,
+            total_withdrawn: 0,
         };
 
         save_stream(&env, &new_stream);
@@ -571,7 +581,7 @@ impl SoroStreamContract {
             return Err(StreamError::ZeroAmount);
         }
 
-        let now = if stream.status == StreamStatus::Paused {
+        let _now = if stream.status == StreamStatus::Paused {
             stream.last_pause_time
         } else {
             env.ledger().timestamp()
@@ -683,17 +693,14 @@ impl SoroStreamContract {
             return Ok(0);
         }
 
-        let effective_now = now.min(stream.end_time);
-        let elapsed = effective_now.saturating_sub(stream.last_withdraw_time);
-        checked_flow_amount(stream.flow_rate, elapsed)
-        let now = env.ledger().timestamp();
-        Ok(vesting_math::compute_claimable(
+        vesting_math::compute_claimable(
             stream.flow_rate,
             now,
             stream.cliff_time,
             stream.end_time,
             stream.last_withdraw_time,
-        ))
+        )
+        .ok_or(StreamError::Overflow)
     }
 
 
@@ -874,7 +881,7 @@ impl SoroStreamContract {
         for i in 0..recipients.len().min(amounts.len()) {
             let recipient = recipients.get_unchecked(i);
             let amount = amounts.get_unchecked(i);
-            let lock_until = lock_untils.get_unchecked(i);
+            let _lock_until = lock_untils.get_unchecked(i);
             // Division safe: duration_seconds > 0 validated above.
             let flow_rate = amount / duration_seconds as i128;
             if flow_rate == 0 {
@@ -897,6 +904,7 @@ impl SoroStreamContract {
                 status: StreamStatus::Active,
                 auto_renew,
                 last_pause_time: 0,
+                total_withdrawn: 0,
             };
 
             save_stream(&env, &stream);
@@ -950,19 +958,25 @@ impl SoroStreamContract {
             }
 
             let effective_now = now.min(stream.end_time);
-            let elapsed = effective_now.saturating_sub(stream.last_withdraw_time);
             let elapsed = if now < stream.cliff_time {
                 0u64
             } else {
                 effective_now.saturating_sub(stream.last_withdraw_time)
             };
             // Checked: flow_rate * elapsed can overflow with large inputs.
-            let claimable = checked_flow_amount(stream.flow_rate, elapsed)?;
             let claimable = vesting_math::compute_earned(
                 stream.flow_rate, now, stream.end_time, stream.last_withdraw_time,
             ).ok_or(StreamError::Overflow)?;
 
             if claimable > 0 {
+                if stream.total_withdrawn
+                    .checked_add(claimable)
+                    .ok_or(StreamError::Overflow)?
+                    > stream.deposit
+                {
+                    return Err(StreamError::Overflow);
+                }
+
                 let fee_bps = get_protocol_fee(&env);
                 // fee_bps ≤ 10_000 (validated in set_protocol_fee), so
                 // claimable * fee_bps fits in i128 as long as claimable < i128::MAX / 10_000.
@@ -1000,6 +1014,11 @@ impl SoroStreamContract {
                         );
                     }
                 }
+
+                stream.total_withdrawn = stream
+                    .total_withdrawn
+                    .checked_add(claimable)
+                    .ok_or(StreamError::Overflow)?;
             }
 
             stream.last_withdraw_time = effective_now;
@@ -1021,6 +1040,7 @@ impl SoroStreamContract {
                     stream.start_time = stream.end_time;
                     stream.end_time = new_end;
                     stream.last_withdraw_time = stream.start_time;
+                    stream.total_withdrawn = 0;
                     save_stream(&env, &stream);
                 } else {
                     events::stream_completed(&env, stream_id);
@@ -1350,5 +1370,13 @@ impl SoroStreamInterface for SoroStreamContract {
 
     fn get_stats(env: Env) -> Stats {
         Self::get_stats(env)
+    }
+
+    fn min_duration(env: Env) -> u64 {
+        Self::min_duration(env)
+    }
+
+    fn set_min_duration(env: Env, admin: Address, seconds: u64) {
+        Self::set_min_duration(env, admin, seconds)
     }
 }

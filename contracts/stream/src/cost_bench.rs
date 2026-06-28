@@ -83,6 +83,9 @@ fn setup_bench() -> BenchEnv {
 
     StellarAssetClient::new(&env, &token_id).mint(&sender, &10_000_000);
 
+    // Disable minimum duration for tests
+    SoroStreamContractClient::new(&env, &contract_id).set_min_duration(&sender, &0u64);
+
     BenchEnv { env, contract_id, token_id, sender, recipient, admin }
 }
 
@@ -720,10 +723,10 @@ fn bench_get_stats_n30() {
 // cost increases by more than 10% over the committed baseline values in
 // `contracts/stream/gas_baseline.json`.
 
-const BASELINE_CREATE_STREAM: i64 = 267771;
-const BASELINE_WITHDRAW: i64 = 213660;
-const BASELINE_TOP_UP: i64 = 209969;
-const BASELINE_CANCEL_STREAM: i64 = 402655;
+const BASELINE_CREATE_STREAM: i64 = 279827;
+const BASELINE_WITHDRAW: i64 = 236440;
+const BASELINE_TOP_UP: i64 = 235711;
+const BASELINE_CANCEL_STREAM: i64 = 424413;
 const REGRESSION_THRESHOLD: f64 = 1.10;
 
 fn assert_no_regression(env: &Env, function_name: &str, baseline: i64) {

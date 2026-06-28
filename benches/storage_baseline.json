@@ -1,9 +1,9 @@
 {
   "create_stream": { "read_entries": 3, "write_entries": 10 },
   "withdraw": { "read_entries": 4, "write_entries": 4 },
-  "top_up": { "read_entries": 3, "write_entries": 4 },
-  "cancel_stream": { "read_entries": 4, "write_entries": 9 },
-  "partial_cancel_stream": { "read_entries": 3, "write_entries": 11 },
+  "top_up": { "read_entries": 4, "write_entries": 4 },
+  "cancel_stream": { "read_entries": 5, "write_entries": 9 },
+  "partial_cancel_stream": { "read_entries": 4, "write_entries": 11 },
   "batch_create_stream_n5": { "read_entries": 3, "write_entries": 25 },
   "batch_withdraw_n5": { "read_entries": 4, "write_entries": 8 },
   "get_stream": { "read_entries": 2, "write_entries": 0 },

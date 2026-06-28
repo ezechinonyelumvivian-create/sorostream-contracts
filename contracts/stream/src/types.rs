@@ -46,6 +46,8 @@ pub struct Stream {
     pub auto_renew: bool,
     /// Ledger timestamp of when the stream was last paused (0 if never paused).
     pub last_pause_time: u64,
+    /// Total amount withdrawn from this stream so far.
+    pub total_withdrawn: i128,
 }
 
 /// Aggregate contract statistics.

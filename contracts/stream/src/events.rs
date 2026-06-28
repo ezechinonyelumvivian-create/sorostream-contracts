@@ -116,6 +116,9 @@ pub fn stream_resumed(env: &Env, stream_id: u64, sender: &Address) {
     env.events().publish(
         (Symbol::new(env, "StreamResumed"), stream_id),
         sender.clone(),
+    );
+}
+
 /// Emitted when a protocol fee is collected on withdrawal.
 pub fn fee_collected(
     env: &Env,

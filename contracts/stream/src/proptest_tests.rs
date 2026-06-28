@@ -22,6 +22,10 @@ fn setup_env() -> (Env, Address, Address, Address, Address) {
     let sender = Address::generate(&env);
     let recipient = Address::generate(&env);
     StellarAssetClient::new(&env, &token_id).mint(&sender, &10_000_000_000);
+
+    // Disable minimum duration for tests
+    SoroStreamContractClient::new(&env, &contract_id).set_min_duration(&sender, &0u64);
+
     (env, contract_id, token_id, sender, recipient)
 }
 

@@ -6,6 +6,7 @@ const ADMIN_KEY: &str = "admin";
 const PAUSED_KEY: &str = "paused";
 const PROTOCOL_FEE_KEY: &str = "fee_bps";
 const TREASURY_KEY: &str = "treasury";
+const MIN_DURATION_KEY: &str = "min_dur";
 
 /// Stores the contract admin address.
 pub fn write_admin(env: &Env, admin: &Address) {
@@ -221,6 +222,21 @@ pub fn get_treasury(env: &Env) -> Option<Address> {
 /// Sets the treasury address for protocol fees.
 pub fn set_treasury(env: &Env, treasury: &Address) {
     env.storage().instance().set(&Symbol::new(env, TREASURY_KEY), treasury);
+}
+
+/// Gets the minimum stream duration in seconds (default 3600 if not set).
+pub fn read_min_duration(env: &Env) -> u64 {
+    env.storage()
+        .instance()
+        .get(&Symbol::new(env, MIN_DURATION_KEY))
+        .unwrap_or(3600u64)
+}
+
+/// Sets the minimum stream duration in seconds.
+pub fn write_min_duration(env: &Env, duration: u64) {
+    env.storage()
+        .instance()
+        .set(&Symbol::new(env, MIN_DURATION_KEY), &duration);
 }
 
 // --- Delegate helpers ---

@@ -29,6 +29,9 @@ fn setup() -> TestEnv {
 
     StellarAssetClient::new(&env, &token_id).mint(&sender, &1_000_000);
 
+    // Disable minimum duration for tests
+    SoroStreamContractClient::new(&env, &contract_id).set_min_duration(&sender, &0u64);
+
     TestEnv {
         env,
         contract_id,
@@ -163,6 +166,7 @@ fn test_auto_renew_restarts_on_completion() {
     StellarAssetClient::new(&env, &token_id).mint(&sender, &200_000);
 
     let c = SoroStreamContractClient::new(&env, &contract_id);
+    c.set_min_duration(&sender, &0u64);
     env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(&sender, &recipient, &token_id, &100_000, &1000, &0, &0u64, &true, &0u64);
@@ -717,6 +721,7 @@ fn snapshot_event_auto_renew_failed() {
     StellarAssetClient::new(&env, &token_id).mint(&sender, &100_000);
 
     let c = SoroStreamContractClient::new(&env, &contract_id);
+    c.set_min_duration(&sender, &0u64);
     env.ledger().set_timestamp(0);
 
     let stream_id = c.create_stream(
@@ -834,7 +839,7 @@ fn error_not_sender_on_cancel() {
     let other = Address::generate(&t.env);
 
     let result = c.try_cancel_stream(&stream_id, &other);
-    assert_eq!(result, Err(Ok(StreamError::NotSender)));
+    assert_eq!(result, Err(Ok(StreamError::NotAuthorized)));
 }
 
 #[test]
@@ -847,7 +852,7 @@ fn error_not_sender_on_top_up() {
     let other = Address::generate(&t.env);
 
     let result = c.try_top_up(&stream_id, &other, &t.token_id, &10_000);
-    assert_eq!(result, Err(Ok(StreamError::NotSender)));
+    assert_eq!(result, Err(Ok(StreamError::NotAuthorized)));
 }
 
 #[test]
@@ -860,7 +865,7 @@ fn error_not_sender_on_partial_cancel() {
     let other = Address::generate(&t.env);
 
     let result = c.try_partial_cancel_stream(&stream_id, &other, &10_000);
-    assert_eq!(result, Err(Ok(StreamError::NotSender)));
+    assert_eq!(result, Err(Ok(StreamError::NotAuthorized)));
 }
 
 #[test]
@@ -982,7 +987,6 @@ fn error_invalid_duration_on_batch_create() {
     let lock_untils = soroban_vec![&t.env, 0u64];
     let result = c.try_batch_create_stream(
         &t.sender, &recipients, &amounts, &t.token_id, &0, &false, &lock_untils,
-        &t.sender, &recipients, &amounts, &t.token_id, &0, &false, &soroban_sdk::vec![&t.env, 0u64],
     );
     assert_eq!(result, Err(Ok(StreamError::InvalidDuration)));
 }
@@ -1057,14 +1061,14 @@ fn error_invalid_partial_cancel_exceeds_remainder() {
     );
 
     // At t=0: remaining = 100_000. cancel_amount = 100_000 exceeds remainder
-    // (must be strictly less than remaining).
+    // (must be strictly less than remainder).
     let result = c.try_partial_cancel_stream(&stream_id, &t.sender, &100_000);
 
     let stream_id = c.create_stream(
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false,
+        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &1u64, &false, &0u64,
     );
 
-    let result = c.try_partial_cancel_stream(&t.sender, stream_id, &100_000);
+    let result = c.try_partial_cancel_stream(&stream_id, &t.sender, &100_000);
     assert_eq!(result, Err(Ok(StreamError::InvalidPartialCancel)));
 }
 
@@ -1124,7 +1128,6 @@ fn test_top_up_extra_seconds_overflow() {
     // flow_rate = 1 stroop/sec
     let stream_id = c.create_stream(
         &t.sender, &t.recipient, &t.token_id, &1_000, &1000, &0, &0u64, &false, &0u64,
-        &t.sender, &t.recipient, &t.token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
     );
     let huge: i128 = (u64::MAX as i128) + 1;
     StellarAssetClient::new(&t.env, &t.token_id).mint(&t.sender, &huge);
@@ -1182,7 +1185,6 @@ fn error_zero_flow_rate_in_batch() {
 
     let result = c.try_batch_create_stream(
         &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &lock_untils,
-        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &soroban_sdk::vec![&t.env, 0u64],
     );
     assert_eq!(result, Err(Ok(StreamError::ZeroFlowRate)));
 }
@@ -1216,7 +1218,6 @@ fn error_batch_length_mismatch() {
 
     let result = c.try_batch_create_stream(
         &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &lock_untils,
-        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &soroban_sdk::vec![&t.env, 0u64],
     );
     assert_eq!(result, Err(Ok(StreamError::BatchLengthMismatch)));
 }
@@ -1232,7 +1233,6 @@ fn error_zero_amount_in_batch() {
 
     let result = c.try_batch_create_stream(
         &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &lock_untils,
-        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &soroban_sdk::vec![&t.env, 0u64],
     );
     assert_eq!(result, Err(Ok(StreamError::ZeroAmount)));
 }
@@ -1331,7 +1331,6 @@ fn test_batch_create_total_amount_overflow() {
     StellarAssetClient::new(&t.env, &t.token_id).mint(&t.sender, &a);
     let result = c.try_batch_create_stream(
         &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &lock_untils,
-        &t.sender, &recipients, &amounts, &t.token_id, &1000, &false, &soroban_sdk::vec![&t.env, 0u64],
     );
     assert!(result.is_err());
 }
@@ -1449,6 +1448,8 @@ fn test_revoke_delegate_strips_capabilities() {
     // Operator tries to top up
     let result = c.try_top_up(&stream_id, &operator, &t.token_id, &50_000);
     assert_eq!(result, Err(Ok(StreamError::NotAuthorized)));
+}
+
 fn test_pause_resume() {
     let t = setup();
     let c = client(&t);
@@ -1479,6 +1480,7 @@ fn test_pause_resume() {
     t.env.ledger().set_timestamp(600);
     let claimable_now = c.get_claimable(&stream_id);
     assert_eq!(claimable_now, 30_000);
+}
 
 // ── Interface trait implementation tests ──────────────────────────────────────
 //
@@ -1700,9 +1702,10 @@ fn test_interface_batch_operations() {
     );
     assert_eq!(stream_ids.len(), 2);
 
-    // Withdraw batch through trait
-    let withdrawal_amounts = c.batch_withdraw(&stream_ids, &t.recipient);
-    assert_eq!(withdrawal_amounts.len(), 2);
+    // Withdraw batch through trait (only first stream for t.recipient)
+    let first_id = soroban_sdk::vec![&t.env, stream_ids.get_unchecked(0)];
+    let withdrawal_amounts = c.batch_withdraw(&first_id, &t.recipient);
+    assert_eq!(withdrawal_amounts.len(), 1);
 }
 
 /// Verify admin operations through the trait interface.
@@ -1751,12 +1754,12 @@ fn test_interface_is_participant() {
     );
 
     // Test sender participation through trait
-    assert!(c.is_participant(&stream_id, &t.sender).unwrap());
+    assert!(c.is_participant(&stream_id, &t.sender));
 
     // Test recipient participation through trait
-    assert!(c.is_participant(&stream_id, &t.recipient).unwrap());
+    assert!(c.is_participant(&stream_id, &t.recipient));
 
     // Test non-participant
     let other = Address::generate(&t.env);
-    assert!(!c.is_participant(&stream_id, &other).unwrap());
+    assert!(!c.is_participant(&stream_id, &other));
 }
