@@ -52,7 +52,8 @@ proptest! {
         let flow_rate = amount / duration as i128;
         if flow_rate == 0 { return Ok(()); }
 
-        c.create_stream(&sender, &recipient, &token_id, &amount, &duration, &cliff, &0u64, &false, &0u64);
+        c.create_stream(&sender, &recipient, &token_id, &amount, &duration, &cliff, &0u64, &false, &0u64,
+        &false);
 
         let sender_after = token.balance(&sender);
         let contract_after = token.balance(&contract_id);
@@ -78,6 +79,7 @@ proptest! {
 
         let stream_id = c.create_stream(
             &sender, &recipient, &token_id, &amount, &duration, &cliff, &0u64, &false, &0u64,
+        &false,
         );
 
         let stream = c.get_stream(&stream_id);
@@ -112,6 +114,7 @@ proptest! {
 
         let stream_id = c.create_stream(
             &sender, &recipient, &token_id, &amount, &duration, &0u64, &0u64, &false, &0u64,
+        &false,
         );
         let token = TokenClient::new(&env, &token_id);
 
@@ -156,6 +159,7 @@ proptest! {
 
         let stream_id = c.create_stream(
             &sender, &recipient, &token_id, &amount, &duration, &0u64, &0u64, &false, &0u64,
+        &false,
         );
         let token = TokenClient::new(&env, &token_id);
 
@@ -188,6 +192,7 @@ proptest! {
 
         let stream_id = c.create_stream(
             &sender, &recipient, &token_id, &amount, &duration, &0u64, &0u64, &false, &0u64,
+        &false,
         );
         let stream_before = c.get_stream(&stream_id);
 
@@ -229,6 +234,7 @@ proptest! {
 
         let stream_id = c.create_stream(
             &sender, &recipient, &token_id, &amount, &duration, &0u64, &0u64, &false, &0u64,
+        &false,
         );
 
         let cancel_time = cancel_time.min(duration - 1).max(1);
@@ -260,6 +266,7 @@ proptest! {
 
         let stream_id = c.create_stream(
             &sender, &recipient, &token_id, &amount, &duration, &0u64, &0u64, &false, &0u64,
+        &false,
         );
 
         env.ledger().set_timestamp(1);
@@ -295,6 +302,7 @@ proptest! {
             // create_stream must fail when paused
             let result = c.try_create_stream(
                 &sender, &recipient, &token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             );
             prop_assert!(result.is_err());
 
@@ -305,6 +313,7 @@ proptest! {
                 // create_stream must work after unpause
                 let result = c.try_create_stream(
                     &sender, &recipient, &token_id, &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
                 );
                 prop_assert!(result.is_ok());
             }

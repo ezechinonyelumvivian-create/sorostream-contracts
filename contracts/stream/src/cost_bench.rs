@@ -236,6 +236,7 @@ fn bench_create_stream() {
     let _stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
     assert_within_limits(&b.env, "create_stream");
 }
@@ -248,6 +249,7 @@ fn bench_get_stream() {
     let stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
 
     c.get_stream(&stream_id);
@@ -262,6 +264,7 @@ fn bench_get_claimable() {
     let stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
     b.env.ledger().set_timestamp(500);
 
@@ -277,6 +280,7 @@ fn bench_withdraw() {
     let stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
     b.env.ledger().set_timestamp(500);
 
@@ -292,6 +296,7 @@ fn bench_cancel_stream() {
     let stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
     b.env.ledger().set_timestamp(300);
 
@@ -307,6 +312,7 @@ fn bench_top_up() {
     let stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
 
     c.top_up(&stream_id, &b.sender, &b.token_id, &50_000);
@@ -325,6 +331,7 @@ fn bench_partial_cancel_stream() {
     let stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
     b.env.ledger().set_timestamp(200);
 
@@ -343,6 +350,7 @@ fn bench_get_streams_by_sender_n1() {
     let _stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
 
     c.get_streams_by_sender(&b.sender, &0, &20);
@@ -366,6 +374,7 @@ fn bench_get_streams_by_sender_n20_limit_violation() {
         let _stream_id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
     }
 
@@ -383,6 +392,7 @@ fn bench_get_streams_by_sender_n15() {
         let _stream_id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
     }
 
@@ -399,6 +409,7 @@ fn bench_get_streams_by_recipient_n1() {
     let _stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
 
     c.get_streams_by_recipient(&b.recipient, &0, &20);
@@ -419,6 +430,7 @@ fn bench_get_streams_by_recipient_n20_limit_violation() {
         let _stream_id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
     }
 
@@ -436,6 +448,7 @@ fn bench_get_streams_by_recipient_n15() {
         let _stream_id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
     }
 
@@ -455,6 +468,7 @@ fn bench_get_active_streams_by_sender_mixed() {
         let _stream_id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
     }
     for stream_id in 0u64..5 {
@@ -476,6 +490,7 @@ fn bench_get_active_streams_by_recipient_mixed() {
         let _stream_id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
     }
     for stream_id in 0u64..5 {
@@ -507,7 +522,8 @@ fn bench_batch_create_stream_n5() {
 
     let mut tokens = soroban_sdk::Vec::new(&b.env);
     for _ in 0..recipients.len() { tokens.push_back(b.token_id.clone()); }
-    c.batch_create_stream(&b.sender, &recipients, &amounts, &tokens, &1000, &false, &lock_untils);
+    c.batch_create_stream(&b.sender, &recipients, &amounts, &tokens, &1000, &false, &lock_untils,
+        &0u64);
     assert_within_limits(&b.env, "batch_create_stream (N=5)");
 }
 
@@ -538,7 +554,8 @@ fn bench_batch_create_stream_n20_limit_violation() {
 
     let mut tokens = soroban_sdk::Vec::new(&b.env);
     for _ in 0..recipients.len() { tokens.push_back(b.token_id.clone()); }
-    c.batch_create_stream(&b.sender, &recipients, &amounts, &tokens, &1000, &false, &lock_untils);
+    c.batch_create_stream(&b.sender, &recipients, &amounts, &tokens, &1000, &false, &lock_untils,
+        &0u64);
     assert_within_limits(&b.env, "batch_create_stream (N=20)");
 }
 
@@ -557,6 +574,7 @@ fn bench_batch_withdraw_n5() {
         let id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
         stream_ids.push_back(id);
     }
@@ -580,6 +598,7 @@ fn bench_batch_withdraw_n20() {
         let id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
         stream_ids.push_back(id);
     }
@@ -604,6 +623,7 @@ fn bench_batch_cancel_stream_n5() {
         let id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
         stream_ids.push_back(id);
     }
@@ -666,6 +686,7 @@ fn bench_get_stats_n10() {
         let _stream_id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
     }
 
@@ -693,6 +714,7 @@ fn bench_get_stats_n50_limit_violation() {
         let _stream_id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
     }
 
@@ -714,6 +736,7 @@ fn bench_get_stats_n30() {
         let _stream_id = c.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
         );
     }
 
@@ -761,6 +784,7 @@ fn cost_regression_create_stream() {
     let _stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
     assert_no_regression(&b.env, "create_stream", BASELINE_CREATE_STREAM);
 }
@@ -773,6 +797,7 @@ fn cost_regression_withdraw() {
     let stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
     b.env.ledger().set_timestamp(500);
 
@@ -788,6 +813,7 @@ fn cost_regression_top_up() {
     let stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
 
     c.top_up(&stream_id, &b.sender, &b.token_id, &50_000);
@@ -802,6 +828,7 @@ fn cost_regression_cancel_stream() {
     let stream_id = c.create_stream(
         &b.sender, &b.recipient, &b.token_id,
         &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
     );
     b.env.ledger().set_timestamp(300);
 

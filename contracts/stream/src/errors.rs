@@ -29,4 +29,5 @@ pub enum StreamError {
     StreamDurationTooShort = 22,
     StreamIdConflict = 23,
     SenderStreamLimitExceeded = 24,
+    InvalidNonce = 25,
 }

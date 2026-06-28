@@ -8,12 +8,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sdk-version: ["22.0.0", "22"]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32v1-none
       - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.sdk-version }}
+      - name: Pin soroban-sdk to matrix version
+        run: |
+          sed -i 's/soroban-sdk = { version = "[^"]*"/soroban-sdk = { version = "${{ matrix.sdk-version }}"/g' \
+            contracts/stream/Cargo.toml contracts/treasury/Cargo.toml
+          cargo update -p soroban-sdk
       - name: Build WASM
         run: cargo build --target wasm32v1-none --release
       - name: Clippy

@@ -184,6 +184,7 @@ pub trait SoroStreamInterface {
         nonce: u64,
         auto_renew: bool,
         lock_until: u64,
+        allow_recipient_termination: bool,
     ) -> Result<u64, StreamError>;
 
     /// Allows the recipient to withdraw all earned tokens since last withdrawal.
@@ -432,11 +433,13 @@ pub trait SoroStreamInterface {
     /// * `duration_seconds` - Duration for all streams.
     /// * `auto_renew` - Whether all streams auto-renew on completion.
     /// * `lock_untils` - Vector of lock timestamps per stream.
+    /// * `nonce` - Monotonic per-sender replay-protection nonce. Must equal `get_nonce(sender)`.
     ///
     /// # Returns
     /// A vector of stream IDs for the newly created streams.
     ///
     /// # Errors
+    /// * `StreamError::InvalidNonce` if `nonce` does not match the stored counter.
     /// * `StreamError::ContractPaused` if the contract is paused.
     /// * `StreamError::BatchLengthMismatch` if vector lengths do not match.
     /// * `StreamError::InvalidDuration` if `duration_seconds` is 0 or overflows.
@@ -452,7 +455,11 @@ pub trait SoroStreamInterface {
         duration_seconds: u64,
         auto_renew: bool,
         lock_untils: Vec<u64>,
+        nonce: u64,
     ) -> Result<Vec<u64>, StreamError>;
+
+    /// Returns the current batch nonce for a sender (next expected value).
+    fn get_nonce(env: Env, sender: Address) -> u64;
 
     /// Withdraws from multiple streams in a single transaction.
     ///
@@ -571,6 +578,11 @@ pub trait SoroStreamInterface {
 
     /// Returns the minimum stream duration in seconds.
     fn min_duration(env: Env) -> u64;
+
+    /// Allows the recipient to terminate a stream early if `allow_recipient_termination` was set.
+    ///
+    /// Recipient receives all vested tokens; sender receives the unstreamed remainder.
+    fn recipient_terminate(env: Env, stream_id: u64, recipient: Address) -> Result<(), StreamError>;
 
     /// Sets the minimum stream duration in seconds.
     /// Only the admin may call this.
