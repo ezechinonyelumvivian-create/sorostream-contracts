@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, String, Symbol};
+use soroban_sdk::{Address, Bytes, Env, String, Symbol};
 
 /// Emitted when a new stream is created.
 pub fn stream_created(
@@ -166,5 +166,29 @@ pub fn recipient_transferred(
     env.events().publish(
         (Symbol::new(env, "RecipientTransferred"), stream_id),
         (old_recipient.clone(), new_recipient.clone()),
+    );
+}
+
+/// Emitted when metadata is updated for a stream.
+pub fn metadata_updated(env: &Env, stream_id: u64, metadata: &Bytes) {
+    env.events().publish(
+        (Symbol::new(env, "MetadataUpdated"), stream_id),
+        metadata.clone(),
+    );
+}
+
+/// Emitted when an auto-renewal is cancelled for a stream.
+pub fn auto_renew_cancelled(env: &Env, stream_id: u64) {
+    env.events().publish(
+        (Symbol::new(env, "AutoRenewCancelled"), stream_id),
+        (),
+    );
+}
+
+/// Emitted when a stream is renewed.
+pub fn stream_renewed(env: &Env, old_stream_id: u64, new_stream_id: u64) {
+    env.events().publish(
+        (Symbol::new(env, "StreamRenewed"), old_stream_id),
+        new_stream_id,
     );
 }
