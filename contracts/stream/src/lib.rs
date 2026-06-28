@@ -338,18 +338,32 @@ impl SoroStreamContract {
 
         // Handle natural completion.
         if now >= stream.end_time {
+            // Dust: the deposit may not be evenly divisible by flow_rate, leaving
+            // `deposit - flow_rate * duration` stroops that were never streamable.
+            // Return any such dust to the sender now that the stream is finalised.
+            let duration = stream.end_time - stream.start_time;
+            let dust = stream.deposit.saturating_sub(stream.flow_rate.saturating_mul(duration as i128));
+
             if stream.auto_renew {
                 let token_client = token::Client::new(&env, &stream.token);
                 let sender_balance = token_client.balance(&stream.sender);
                 if sender_balance < stream.deposit {
                     events::auto_renew_failed(&env, stream_id, &stream.sender, stream.deposit);
+                    // Return creation-time dust to sender before marking completed.
+                    if dust > 0 {
+                        token_client.transfer(
+                            &env.current_contract_address(),
+                            &stream.sender,
+                            &dust,
+                        );
+                    }
                     stream.status = StreamStatus::Completed;
                     events::stream_completed(&env, stream_id);
                     save_stream(&env, &stream);
                 } else {
-                    // end_time > start_time is an invariant maintained on creation.
-                    let duration = stream.end_time - stream.start_time;
                     stream.sender.require_auth();
+                    // On renewal the full original deposit is re-locked, so dust is
+                    // naturally absorbed into the new cycle — no separate dust refund.
                     token_client.transfer(
                         &stream.sender,
                         &env.current_contract_address(),
@@ -369,6 +383,14 @@ impl SoroStreamContract {
                 save_stream(&env, &stream);
 
             } else {
+                // Return creation-time dust to sender before removing the stream.
+                if dust > 0 {
+                    token::Client::new(&env, &stream.token).transfer(
+                        &env.current_contract_address(),
+                        &stream.sender,
+                        &dust,
+                    );
+                }
                 events::stream_completed(&env, stream_id);
                 remove_stream(&env, stream_id);
                 unindex_by_sender(&env, &stream.sender, stream_id);
@@ -411,10 +433,14 @@ impl SoroStreamContract {
             stream.flow_rate, now, stream.end_time, stream.last_withdraw_time,
         ).ok_or(StreamError::Overflow)?;
 
-        let total_streamed = vesting_math::compute_total_streamed(
-            stream.flow_rate, now, stream.end_time, stream.start_time,
-        ).ok_or(StreamError::Overflow)?;
-        let refund_amount = stream.deposit.saturating_sub(total_streamed);
+        // Refund is the full remaining balance for this stream: everything deposited
+        // that has not yet been withdrawn and is not owed to the recipient right now.
+        // Using `deposit - total_withdrawn - recipient_amount` rather than
+        // `deposit - total_streamed` ensures any creation-time dust (deposit %
+        // flow_rate) is always returned to the sender and no stroop is lost.
+        let refund_amount = stream.deposit
+            .saturating_sub(stream.total_withdrawn)
+            .saturating_sub(recipient_amount);
 
         let token_client = token::Client::new(&env, &stream.token);
 
@@ -1025,8 +1051,13 @@ impl SoroStreamContract {
 
             // Handle natural completion.
             if now >= stream.end_time {
+                // Dust: return any non-streamable deposit remainder to the sender.
+                let duration = stream.end_time - stream.start_time;
+                let dust = stream.deposit.saturating_sub(stream.flow_rate.saturating_mul(duration as i128));
+
                 if stream.auto_renew {
-                    let duration = stream.end_time - stream.start_time;
+                    // On renewal the full deposit is re-locked, absorbing any dust
+                    // into the next cycle — no separate dust refund needed.
                     stream.sender.require_auth();
                     token::Client::new(&env, &stream.token).transfer(
                         &stream.sender,
@@ -1043,6 +1074,13 @@ impl SoroStreamContract {
                     stream.total_withdrawn = 0;
                     save_stream(&env, &stream);
                 } else {
+                    if dust > 0 {
+                        token::Client::new(&env, &stream.token).transfer(
+                            &env.current_contract_address(),
+                            &stream.sender,
+                            &dust,
+                        );
+                    }
                     events::stream_completed(&env, stream_id);
                     remove_stream(&env, stream_id);
                     unindex_by_sender(&env, &stream.sender, stream_id);
@@ -1090,10 +1128,12 @@ impl SoroStreamContract {
                     stream.flow_rate, now, stream.end_time, stream.last_withdraw_time,
                 ).ok_or(StreamError::Overflow)?;
 
-                let total_streamed = vesting_math::compute_total_streamed(
-                    stream.flow_rate, now, stream.end_time, stream.start_time,
-                ).ok_or(StreamError::Overflow)?;
-                let refund_amount = stream.deposit.saturating_sub(total_streamed);
+                // Use balance-exact formula: refund everything that isn't owed to the
+                // recipient right now and hasn't already been withdrawn, so no stroop
+                // is left behind.
+                let refund_amount = stream.deposit
+                    .saturating_sub(stream.total_withdrawn)
+                    .saturating_sub(recipient_amount);
 
                 let token_client = token::Client::new(&env, &stream.token);
 
