@@ -35,4 +35,6 @@ pub enum StreamError {
     WithdrawalCooldownActive = 28,
     RecipientNotWhitelisted = 29,
     MetadataTooLong = 30,
+    InvalidEndTime = 31,
+    InsufficientXlmForFee = 32,
 }

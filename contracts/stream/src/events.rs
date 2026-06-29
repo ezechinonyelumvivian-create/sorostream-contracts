@@ -212,6 +212,7 @@ pub fn stream_archived(
         (sender.clone(), recipient.clone(), total_amount),
     );
 }
+
 /// Emitted when metadata is updated for a stream.
 pub fn metadata_updated(env: &Env, stream_id: u64, metadata: &Bytes) {
     env.events().publish(
@@ -233,5 +234,13 @@ pub fn stream_renewed(env: &Env, old_stream_id: u64, new_stream_id: u64) {
     env.events().publish(
         (Symbol::new(env, "StreamRenewed"), old_stream_id),
         new_stream_id,
+    );
+}
+
+/// Emitted when a creation fee is collected in XLM at stream creation time.
+pub fn creation_fee_collected(env: &Env, fee_amount: i128, treasury: &Address) {
+    env.events().publish(
+        (Symbol::new(env, "CreationFeeCollected"),),
+        (fee_amount, treasury.clone()),
     );
 }

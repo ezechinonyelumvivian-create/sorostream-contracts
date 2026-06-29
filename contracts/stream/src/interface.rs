@@ -651,4 +651,9 @@ pub trait SoroStreamInterface {
 
     /// Returns the timestamp at which the contract will auto-unpause (0 = not set).
     fn get_pause_expiry(env: Env) -> u64;
+    /// Sets the flat XLM creation fee (in stroops) and the XLM SAC token address. Admin-only.
+    fn set_creation_fee(env: Env, fee: i128, xlm_token: Address) -> Result<(), StreamError>;
+
+    /// Returns the current XLM creation fee in stroops (0 = disabled).
+    fn get_creation_fee(env: Env) -> i128;
 }
