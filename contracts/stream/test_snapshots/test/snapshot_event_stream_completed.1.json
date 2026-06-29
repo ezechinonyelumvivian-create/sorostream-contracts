@@ -109,6 +109,9 @@
                 },
                 {
                   "u64": 0
+                },
+                {
+                  "bool": false
                 }
               ]
             }
@@ -151,7 +154,7 @@
               "function_name": "withdraw",
               "args": [
                 {
-                  "u64": 0
+                  "u64": 16790896871589772251
                 },
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
@@ -233,6 +236,51 @@
             "ext": "v0"
           },
           6311999
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "gi"
+                },
+                {
+                  "u32": 0
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "gi"
+                    },
+                    {
+                      "u32": 0
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "u64": 16790896871589772251
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
         ]
       ],
       [
@@ -409,10 +457,10 @@
                       },
                       {
                         "key": {
-                          "symbol": "next_id"
+                          "symbol": "str_cnt"
                         },
                         "val": {
-                          "u64": 1
+                          "u32": 1
                         }
                       }
                     ]
@@ -956,7 +1004,7 @@
                 "symbol": "StreamCompleted"
               },
               {
-                "u64": 0
+                "u64": 16790896871589772251
               }
             ],
             "data": "void"
@@ -977,7 +1025,7 @@
                 "symbol": "StreamWithdrawn"
               },
               {
-                "u64": 0
+                "u64": 16790896871589772251
               }
             ],
             "data": {

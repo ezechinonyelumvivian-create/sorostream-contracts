@@ -211,7 +211,7 @@
                           "symbol": "version"
                         },
                         "val": {
-                          "string": "0.2.0"
+                          "string": "1.0.0"
                         }
                       }
                     ]

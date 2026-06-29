@@ -109,6 +109,9 @@
                 },
                 {
                   "u64": 0
+                },
+                {
+                  "bool": false
                 }
               ]
             }
@@ -152,7 +155,7 @@
               "function_name": "top_up",
               "args": [
                 {
-                  "u64": 0
+                  "u64": 16790896871589772251
                 },
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
@@ -275,7 +278,7 @@
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
             "key": {
-              "u64": 0
+              "u64": 16790896871589772251
             },
             "durability": "persistent"
           }
@@ -288,11 +291,19 @@
                 "ext": "v0",
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
                 "key": {
-                  "u64": 0
+                  "u64": 16790896871589772251
                 },
                 "durability": "persistent",
                 "val": {
                   "map": [
+                    {
+                      "key": {
+                        "symbol": "allow_recipient_termination"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    },
                     {
                       "key": {
                         "symbol": "auto_renew"
@@ -344,7 +355,7 @@
                         "symbol": "id"
                       },
                       "val": {
-                        "u64": 0
+                        "u64": 16790896871589772251
                       }
                     },
                     {
@@ -427,6 +438,51 @@
                       }
                     }
                   ]
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "gi"
+                },
+                {
+                  "u32": 0
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "gi"
+                    },
+                    {
+                      "u32": 0
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "u64": 16790896871589772251
                 }
               }
             },
@@ -528,7 +584,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 0
+                  "u64": 16790896871589772251
                 }
               }
             },
@@ -624,7 +680,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 0
+                  "u64": 16790896871589772251
                 }
               }
             },
@@ -711,10 +767,10 @@
                       },
                       {
                         "key": {
-                          "symbol": "next_id"
+                          "symbol": "str_cnt"
                         },
                         "val": {
-                          "u64": 1
+                          "u32": 1
                         }
                       }
                     ]

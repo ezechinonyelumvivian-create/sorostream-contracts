@@ -88,6 +88,7 @@ fn generate_storage_baseline() {
         let _stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         results.push(measure(&b.env, "create_stream"));
@@ -101,6 +102,7 @@ fn generate_storage_baseline() {
         let stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         b.env.ledger().set_timestamp(500);
@@ -116,6 +118,7 @@ fn generate_storage_baseline() {
         let stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         cl.top_up(&stream_id, &b.sender, &b.token_id, &50_000);
@@ -130,6 +133,7 @@ fn generate_storage_baseline() {
         let stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         b.env.ledger().set_timestamp(300);
@@ -145,6 +149,7 @@ fn generate_storage_baseline() {
         let stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         b.env.ledger().set_timestamp(200);
@@ -169,6 +174,7 @@ fn generate_storage_baseline() {
         for _ in 0..recipients.len() { tokens.push_back(b.token_id.clone()); }
         cl.batch_create_stream(
             &b.sender, &recipients, &amounts, &tokens, &1000, &false, &lock_untils,
+        &0u64,
         );
         results.push(measure(&b.env, "batch_create_stream_n5"));
     }
@@ -184,6 +190,7 @@ fn generate_storage_baseline() {
             let id = cl.create_stream(
                 &b.sender, &b.recipient, &b.token_id,
                 &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
             );
             stream_ids.push_back(id);
         }
@@ -200,6 +207,7 @@ fn generate_storage_baseline() {
         let _stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         std::println!("stream_id: {}", _stream_id); cl.get_stream(&_stream_id);
@@ -214,6 +222,7 @@ fn generate_storage_baseline() {
         let _stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         b.env.ledger().set_timestamp(500);
@@ -258,6 +267,7 @@ fn check_storage_baseline_regression() {
         let _stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         current.push(("create_stream", measure(&b.env, "create_stream")));
@@ -271,6 +281,7 @@ fn check_storage_baseline_regression() {
         let stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         b.env.ledger().set_timestamp(500);
@@ -286,6 +297,7 @@ fn check_storage_baseline_regression() {
         let stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         cl.top_up(&stream_id, &b.sender, &b.token_id, &50_000);
@@ -300,6 +312,7 @@ fn check_storage_baseline_regression() {
         let stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         b.env.ledger().set_timestamp(300);
@@ -315,6 +328,7 @@ fn check_storage_baseline_regression() {
         let stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         b.env.ledger().set_timestamp(200);
@@ -338,6 +352,7 @@ fn check_storage_baseline_regression() {
         for _ in 0..recipients.len() { tokens.push_back(b.token_id.clone()); }
         cl.batch_create_stream(
             &b.sender, &recipients, &amounts, &tokens, &1000, &false, &lock_untils,
+        &0u64,
         );
         current.push(("batch_create_stream_n5", measure(&b.env, "batch_create_stream_n5")));
     }
@@ -352,6 +367,7 @@ fn check_storage_baseline_regression() {
             let id = cl.create_stream(
                 &b.sender, &b.recipient, &b.token_id,
                 &10_000, &1000, &0, &nonce, &false, &0u64,
+        &false,
             );
             stream_ids.push_back(id);
         }
@@ -368,6 +384,7 @@ fn check_storage_baseline_regression() {
         let _stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         std::println!("stream_id: {}", _stream_id); cl.get_stream(&_stream_id);
@@ -382,6 +399,7 @@ fn check_storage_baseline_regression() {
         let _stream_id = cl.create_stream(
             &b.sender, &b.recipient, &b.token_id,
             &100_000, &1000, &0, &0u64, &false, &0u64,
+        &false,
             &Bytes::new(&b.env),
         );
         b.env.ledger().set_timestamp(500);

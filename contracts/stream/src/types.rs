@@ -45,6 +45,8 @@ pub struct Stream {
     pub status: StreamStatus,
     /// Whether the stream auto-renews on completion.
     pub auto_renew: bool,
+    /// Whether the recipient is allowed to terminate the stream early.
+    pub allow_recipient_termination: bool,
     /// Ledger timestamp of when the stream was last paused (0 if never paused).
     pub last_pause_time: u64,
     /// Total amount withdrawn from this stream so far.

@@ -109,6 +109,9 @@
                 },
                 {
                   "u64": 0
+                },
+                {
+                  "bool": false
                 }
               ]
             }
@@ -179,6 +182,9 @@
                 },
                 {
                   "u64": 0
+                },
+                {
+                  "bool": false
                 }
               ]
             }
@@ -249,6 +255,9 @@
                 },
                 {
                   "u64": 0
+                },
+                {
+                  "bool": false
                 }
               ]
             }
@@ -319,6 +328,9 @@
                 },
                 {
                   "u64": 0
+                },
+                {
+                  "bool": false
                 }
               ]
             }
@@ -389,6 +401,9 @@
                 },
                 {
                   "u64": 0
+                },
+                {
+                  "bool": false
                 }
               ]
             }
@@ -433,19 +448,19 @@
                 {
                   "vec": [
                     {
-                      "u64": 0
+                      "u64": 16790896871589772251
                     },
                     {
-                      "u64": 1
+                      "u64": 17204383379934562003
                     },
                     {
-                      "u64": 2
+                      "u64": 12791082062046742303
                     },
                     {
-                      "u64": 3
+                      "u64": 9868419706395338012
                     },
                     {
-                      "u64": 4
+                      "u64": 8015258443315779418
                     }
                   ]
                 },
@@ -536,7 +551,7 @@
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
             "key": {
-              "u64": 0
+              "u64": 8015258443315779418
             },
             "durability": "persistent"
           }
@@ -549,11 +564,19 @@
                 "ext": "v0",
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
                 "key": {
-                  "u64": 0
+                  "u64": 8015258443315779418
                 },
                 "durability": "persistent",
                 "val": {
                   "map": [
+                    {
+                      "key": {
+                        "symbol": "allow_recipient_termination"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    },
                     {
                       "key": {
                         "symbol": "auto_renew"
@@ -605,7 +628,7 @@
                         "symbol": "id"
                       },
                       "val": {
-                        "u64": 0
+                        "u64": 8015258443315779418
                       }
                     },
                     {
@@ -701,7 +724,7 @@
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
             "key": {
-              "u64": 1
+              "u64": 9868419706395338012
             },
             "durability": "persistent"
           }
@@ -714,11 +737,19 @@
                 "ext": "v0",
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
                 "key": {
-                  "u64": 1
+                  "u64": 9868419706395338012
                 },
                 "durability": "persistent",
                 "val": {
                   "map": [
+                    {
+                      "key": {
+                        "symbol": "allow_recipient_termination"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    },
                     {
                       "key": {
                         "symbol": "auto_renew"
@@ -770,7 +801,7 @@
                         "symbol": "id"
                       },
                       "val": {
-                        "u64": 1
+                        "u64": 9868419706395338012
                       }
                     },
                     {
@@ -866,7 +897,7 @@
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
             "key": {
-              "u64": 2
+              "u64": 12791082062046742303
             },
             "durability": "persistent"
           }
@@ -879,11 +910,19 @@
                 "ext": "v0",
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
                 "key": {
-                  "u64": 2
+                  "u64": 12791082062046742303
                 },
                 "durability": "persistent",
                 "val": {
                   "map": [
+                    {
+                      "key": {
+                        "symbol": "allow_recipient_termination"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    },
                     {
                       "key": {
                         "symbol": "auto_renew"
@@ -935,7 +974,7 @@
                         "symbol": "id"
                       },
                       "val": {
-                        "u64": 2
+                        "u64": 12791082062046742303
                       }
                     },
                     {
@@ -1031,7 +1070,7 @@
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
             "key": {
-              "u64": 3
+              "u64": 16790896871589772251
             },
             "durability": "persistent"
           }
@@ -1044,11 +1083,19 @@
                 "ext": "v0",
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
                 "key": {
-                  "u64": 3
+                  "u64": 16790896871589772251
                 },
                 "durability": "persistent",
                 "val": {
                   "map": [
+                    {
+                      "key": {
+                        "symbol": "allow_recipient_termination"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    },
                     {
                       "key": {
                         "symbol": "auto_renew"
@@ -1100,7 +1147,7 @@
                         "symbol": "id"
                       },
                       "val": {
-                        "u64": 3
+                        "u64": 16790896871589772251
                       }
                     },
                     {
@@ -1196,7 +1243,7 @@
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
             "key": {
-              "u64": 4
+              "u64": 17204383379934562003
             },
             "durability": "persistent"
           }
@@ -1209,11 +1256,19 @@
                 "ext": "v0",
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
                 "key": {
-                  "u64": 4
+                  "u64": 17204383379934562003
                 },
                 "durability": "persistent",
                 "val": {
                   "map": [
+                    {
+                      "key": {
+                        "symbol": "allow_recipient_termination"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    },
                     {
                       "key": {
                         "symbol": "auto_renew"
@@ -1265,7 +1320,7 @@
                         "symbol": "id"
                       },
                       "val": {
-                        "u64": 4
+                        "u64": 17204383379934562003
                       }
                     },
                     {
@@ -1348,6 +1403,231 @@
                       }
                     }
                   ]
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "gi"
+                },
+                {
+                  "u32": 0
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "gi"
+                    },
+                    {
+                      "u32": 0
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "u64": 16790896871589772251
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "gi"
+                },
+                {
+                  "u32": 1
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "gi"
+                    },
+                    {
+                      "u32": 1
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "u64": 17204383379934562003
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "gi"
+                },
+                {
+                  "u32": 2
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "gi"
+                    },
+                    {
+                      "u32": 2
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "u64": 12791082062046742303
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "gi"
+                },
+                {
+                  "u32": 3
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "gi"
+                    },
+                    {
+                      "u32": 3
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "u64": 9868419706395338012
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "gi"
+                },
+                {
+                  "u32": 4
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "gi"
+                    },
+                    {
+                      "u32": 4
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "u64": 8015258443315779418
                 }
               }
             },
@@ -1653,7 +1933,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 0
+                  "u64": 16790896871589772251
                 }
               }
             },
@@ -1704,7 +1984,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 1
+                  "u64": 17204383379934562003
                 }
               }
             },
@@ -1755,7 +2035,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 2
+                  "u64": 12791082062046742303
                 }
               }
             },
@@ -1806,7 +2086,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 3
+                  "u64": 9868419706395338012
                 }
               }
             },
@@ -1857,7 +2137,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 4
+                  "u64": 8015258443315779418
                 }
               }
             },
@@ -1953,7 +2233,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 0
+                  "u64": 16790896871589772251
                 }
               }
             },
@@ -2004,7 +2284,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 1
+                  "u64": 17204383379934562003
                 }
               }
             },
@@ -2055,7 +2335,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 2
+                  "u64": 12791082062046742303
                 }
               }
             },
@@ -2106,7 +2386,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 3
+                  "u64": 9868419706395338012
                 }
               }
             },
@@ -2157,7 +2437,7 @@
                 },
                 "durability": "persistent",
                 "val": {
-                  "u64": 4
+                  "u64": 8015258443315779418
                 }
               }
             },
@@ -2244,10 +2524,10 @@
                       },
                       {
                         "key": {
-                          "symbol": "next_id"
+                          "symbol": "str_cnt"
                         },
                         "val": {
-                          "u64": 5
+                          "u32": 5
                         }
                       }
                     ]
@@ -2923,7 +3203,7 @@
                 "symbol": "StreamWithdrawn"
               },
               {
-                "u64": 0
+                "u64": 16790896871589772251
               }
             ],
             "data": {
@@ -2991,7 +3271,7 @@
                 "symbol": "StreamWithdrawn"
               },
               {
-                "u64": 1
+                "u64": 17204383379934562003
               }
             ],
             "data": {
@@ -3059,7 +3339,7 @@
                 "symbol": "StreamWithdrawn"
               },
               {
-                "u64": 2
+                "u64": 12791082062046742303
               }
             ],
             "data": {
@@ -3127,7 +3407,7 @@
                 "symbol": "StreamWithdrawn"
               },
               {
-                "u64": 3
+                "u64": 9868419706395338012
               }
             ],
             "data": {
@@ -3195,7 +3475,7 @@
                 "symbol": "StreamWithdrawn"
               },
               {
-                "u64": 4
+                "u64": 8015258443315779418
               }
             ],
             "data": {

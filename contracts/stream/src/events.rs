@@ -156,6 +156,20 @@ pub fn fee_change_executed(env: &Env, new_fee: u32) {
     );
 }
 
+/// Emitted when a recipient terminates a stream early.
+pub fn stream_terminated_by_recipient(
+    env: &Env,
+    stream_id: u64,
+    recipient: &Address,
+    recipient_amount: i128,
+    refund_amount: i128,
+) {
+    env.events().publish(
+        (Symbol::new(env, "StreamTerminatedByRecipient"), stream_id),
+        (recipient.clone(), recipient_amount, refund_amount),
+    );
+}
+
 /// Emitted when a stream recipient transfers their rights to a new recipient.
 pub fn recipient_transferred(
     env: &Env,

@@ -219,7 +219,18 @@ pub fn get_ids_by_recipient(env: &Env, recipient: &Address) -> Vec<u64> {
     ids
 }
 
-/// Returns true if this (sender, nonce) pair has already been used.
+/// Returns the current batch nonce for a sender (next expected value).
+pub fn get_batch_nonce(env: &Env, sender: &Address) -> u64 {
+    let key = (Symbol::new(env, "bn"), sender.clone());
+    env.storage().persistent().get(&key).unwrap_or(0u64)
+}
+
+/// Increments and stores the batch nonce for a sender.
+pub fn increment_batch_nonce(env: &Env, sender: &Address) {
+    let key = (Symbol::new(env, "bn"), sender.clone());
+    let next = get_batch_nonce(env, sender).checked_add(1).expect("batch nonce overflow");
+    env.storage().persistent().set(&key, &next);
+}
 pub fn nonce_used(env: &Env, sender: &Address, nonce: u64) -> bool {
     let key = (Symbol::new(env, "n"), sender.clone(), nonce);
     env.storage().persistent().has(&key)

@@ -34,6 +34,15 @@ mod testnet_integration_tests;
 
 use soroban_sdk::{contract, contractimpl, token, Address, Bytes, BytesN, Env, String, Vec, Symbol, IntoVal};
 use storage::{
+    check_admin, derive_stream_id, effective_sender_limit, get_batch_nonce, get_global_stream_at,
+    get_global_stream_count, get_ids_by_recipient, get_ids_by_sender, get_protocol_fee,
+    get_sender_stream_count, get_treasury, increment_batch_nonce, index_by_recipient,
+    index_by_sender, index_global_stream, is_paused, load_stream, mark_nonce_used, nonce_used,
+    read_admin, read_min_duration, read_version, remove_stream, save_stream,
+    set_max_streams_per_sender, set_paused, set_protocol_fee, set_sender_limit, set_treasury,
+    stream_exists, unindex_by_recipient, unindex_by_sender, write_admin, write_min_duration,
+    write_version, set_delegate, get_delegate, remove_delegate, read_pending_fee_proposal,
+    write_pending_fee_proposal, clear_pending_fee_proposal,
     append_audit_entry, check_admin, derive_stream_id, effective_sender_limit, get_global_stream_at,
     get_global_stream_count, get_ids_by_recipient, get_ids_by_sender, get_protocol_fee,
     get_sender_stream_count, get_treasury, index_by_recipient, index_by_sender,
@@ -240,6 +249,7 @@ impl SoroStreamContract {
         nonce: u64,
         auto_renew: bool,
         lock_until: u64,
+        allow_recipient_termination: bool,
         metadata: Bytes,
     ) -> Result<u64, StreamError> {
         sender.require_auth();
@@ -315,6 +325,7 @@ impl SoroStreamContract {
             last_withdraw_time: now,
             status: StreamStatus::Active,
             auto_renew,
+            allow_recipient_termination,
             last_pause_time: 0,
             total_withdrawn: 0,
             metadata: metadata.clone(),
@@ -616,6 +627,67 @@ impl SoroStreamContract {
         Ok(())
     }
 
+    /// Allows the recipient to terminate a stream early (only if `allow_recipient_termination` is true).
+    ///
+    /// The recipient receives all currently vested tokens; the sender receives the remainder.
+    pub fn recipient_terminate(env: Env, stream_id: u64, recipient: Address) -> Result<(), StreamError> {
+        if is_paused(&env) {
+            return Err(StreamError::ContractPaused);
+        }
+        recipient.require_auth();
+
+        let stream = load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)?;
+
+        if stream.recipient != recipient {
+            return Err(StreamError::NotRecipient);
+        }
+        if !stream.allow_recipient_termination {
+            return Err(StreamError::NotAuthorized);
+        }
+        if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
+            return Err(StreamError::StreamNotActive);
+        }
+
+        let now = if stream.status == StreamStatus::Paused {
+            stream.last_pause_time
+        } else {
+            env.ledger().timestamp()
+        };
+
+        let recipient_amount = vesting_math::compute_claimable(
+            stream.flow_rate,
+            now,
+            stream.cliff_time,
+            stream.end_time,
+            stream.last_withdraw_time,
+        ).ok_or(StreamError::Overflow)?;
+
+        let refund_amount = stream.deposit
+            .saturating_sub(stream.total_withdrawn)
+            .saturating_sub(recipient_amount);
+
+        let token_client = token::Client::new(&env, &stream.token);
+
+        if recipient_amount > 0 {
+            token_client.transfer(
+                &env.current_contract_address(),
+                &recipient,
+                &recipient_amount,
+            );
+        }
+        if refund_amount > 0 {
+            token_client.transfer(&env.current_contract_address(), &stream.sender, &refund_amount);
+        }
+
+        remove_stream(&env, stream_id);
+        unindex_by_sender(&env, &stream.sender, stream_id);
+        unindex_by_recipient(&env, &stream.recipient, stream_id);
+
+        events::stream_terminated_by_recipient(&env, stream_id, &recipient, recipient_amount, refund_amount);
+
+        Ok(())
+    }
+
     /// Transfers claim rights of a stream to a new recipient.
     pub fn transfer_recipient(
         env: Env,
@@ -790,6 +862,7 @@ impl SoroStreamContract {
             last_withdraw_time: now,
             status: StreamStatus::Active,
             auto_renew: stream.auto_renew,
+            allow_recipient_termination: stream.allow_recipient_termination,
             last_pause_time: 0,
             total_withdrawn: 0,
             metadata: stream.metadata.clone(),
@@ -922,6 +995,11 @@ impl SoroStreamContract {
         }
 
         ids
+    }
+
+    /// Returns the current batch nonce for a sender (next expected nonce).
+    pub fn get_nonce(env: Env, sender: Address) -> u64 {
+        get_batch_nonce(&env, &sender)
     }
 
     /// Returns the amount of tokens currently claimable by the recipient.
@@ -1077,11 +1155,18 @@ impl SoroStreamContract {
         duration_seconds: u64,
         auto_renew: bool,
         lock_untils: Vec<u64>,
+        nonce: u64,
     ) -> Result<Vec<u64>, StreamError> {
         if is_paused(&env) {
             return Err(StreamError::ContractPaused);
         }
         sender.require_auth();
+
+        let expected_nonce = get_batch_nonce(&env, &sender);
+        if nonce != expected_nonce {
+            return Err(StreamError::InvalidNonce);
+        }
+        increment_batch_nonce(&env, &sender);
 
         if recipients.len() != amounts.len() || recipients.len() != lock_untils.len() || recipients.len() != tokens.len() {
             return Err(StreamError::BatchLengthMismatch);
@@ -1139,6 +1224,7 @@ impl SoroStreamContract {
                 last_withdraw_time: now,
                 status: StreamStatus::Active,
                 auto_renew,
+                allow_recipient_termination: false,
                 last_pause_time: 0,
                 total_withdrawn: 0,
                 metadata: Bytes::new(&env),
@@ -1520,6 +1606,7 @@ impl SoroStreamInterface for SoroStreamContract {
         nonce: u64,
         auto_renew: bool,
         lock_until: u64,
+        allow_recipient_termination: bool,
         metadata: Bytes,
     ) -> Result<u64, StreamError> {
         Self::create_stream(
@@ -1533,6 +1620,7 @@ impl SoroStreamInterface for SoroStreamContract {
             nonce,
             auto_renew,
             lock_until,
+            allow_recipient_termination,
             metadata,
         )
     }
@@ -1596,6 +1684,10 @@ impl SoroStreamInterface for SoroStreamContract {
         Self::get_all_stream_ids(env, start, limit)
     }
 
+    fn get_nonce(env: Env, sender: Address) -> u64 {
+        Self::get_nonce(env, sender)
+    }
+
     fn get_claimable(env: Env, stream_id: u64) -> Result<i128, StreamError> {
         Self::get_claimable(env, stream_id)
     }
@@ -1634,6 +1726,7 @@ impl SoroStreamInterface for SoroStreamContract {
         duration_seconds: u64,
         auto_renew: bool,
         lock_untils: Vec<u64>,
+        nonce: u64,
     ) -> Result<Vec<u64>, StreamError> {
         Self::batch_create_stream(
             env,
@@ -1644,6 +1737,7 @@ impl SoroStreamInterface for SoroStreamContract {
             duration_seconds,
             auto_renew,
             lock_untils,
+            nonce,
         )
     }
 
@@ -1701,5 +1795,9 @@ impl SoroStreamInterface for SoroStreamContract {
 
     fn execute_fee_change(env: Env) -> Result<(), StreamError> {
         Self::execute_fee_change(env)
+    }
+
+    fn recipient_terminate(env: Env, stream_id: u64, recipient: Address) -> Result<(), StreamError> {
+        Self::recipient_terminate(env, stream_id, recipient)
     }
 }
