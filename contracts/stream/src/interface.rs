@@ -34,7 +34,7 @@
 //! }
 //! ```
 
-use soroban_sdk::{contractclient, Address, BytesN, Env, String, Vec};
+use soroban_sdk::{contractclient, Address, Bytes, BytesN, Env, String, Vec};
 
 use crate::errors::StreamError;
 use crate::types::{AuditEntry, Stats, Stream};
@@ -162,6 +162,7 @@ pub trait SoroStreamInterface {
     /// * `nonce` - Caller-supplied deduplication nonce (unique per sender).
     /// * `auto_renew` - Whether the stream restarts automatically upon completion.
     /// * `lock_until` - Ledger timestamp before which withdrawals are not permitted.
+    /// * `metadata` - Optional metadata bytes (max 64 bytes) attached to the stream.
     ///
     /// # Returns
     /// The unique stream ID (u64) of the newly created stream.
@@ -184,7 +185,26 @@ pub trait SoroStreamInterface {
         nonce: u64,
         auto_renew: bool,
         lock_until: u64,
+        metadata: Bytes,
     ) -> Result<u64, StreamError>;
+
+    /// Sets the global withdrawal cooldown in seconds.
+    fn set_withdrawal_cooldown(env: Env, admin: Address, cooldown_seconds: u64) -> Result<(), StreamError>;
+
+    /// Enables or disables recipient whitelisting.
+    fn set_whitelist_enabled(env: Env, admin: Address, enabled: bool) -> Result<(), StreamError>;
+
+    /// Adds a recipient to the whitelist.
+    fn add_to_whitelist(env: Env, admin: Address, recipient: Address) -> Result<(), StreamError>;
+
+    /// Removes a recipient from the whitelist.
+    fn remove_from_whitelist(env: Env, admin: Address, recipient: Address) -> Result<(), StreamError>;
+
+    /// Updates the metadata blob attached to a stream.
+    fn update_metadata(env: Env, sender: Address, stream_id: u64, metadata: Bytes) -> Result<(), StreamError>;
+
+    /// Cancels auto-renewal for an existing stream.
+    fn cancel_auto_renew(env: Env, sender: Address, stream_id: u64) -> Result<(), StreamError>;
 
     /// Allows the recipient to withdraw all earned tokens since last withdrawal.
     ///

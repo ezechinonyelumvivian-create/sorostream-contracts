@@ -10,6 +10,8 @@ const VERSION_KEY: &str = "version";
 const MAX_STREAMS_KEY: &str = "max_str";
 const STREAM_COUNT_KEY: &str = "str_cnt";
 const PENDING_FEE_KEY: &str = "pnd_fee";
+const WITHDRAWAL_COOLDOWN_KEY: &str = "wd_cd";
+const WHITELIST_ENABLED_KEY: &str = "wl_en";
 
 /// Stores the contract admin address.
 pub fn write_admin(env: &Env, admin: &Address) {
@@ -346,6 +348,55 @@ pub fn set_max_streams_per_sender(env: &Env, max_streams: u32) {
     env.storage()
         .instance()
         .set(&Symbol::new(env, MAX_STREAMS_KEY), &max_streams);
+}
+
+/// Gets the global withdrawal cooldown in seconds (default: 0).
+pub fn get_withdrawal_cooldown(env: &Env) -> u64 {
+    env.storage()
+        .instance()
+        .get(&Symbol::new(env, WITHDRAWAL_COOLDOWN_KEY))
+        .unwrap_or(0u64)
+}
+
+/// Sets the global withdrawal cooldown in seconds.
+pub fn set_withdrawal_cooldown(env: &Env, cooldown: u64) {
+    env.storage()
+        .instance()
+        .set(&Symbol::new(env, WITHDRAWAL_COOLDOWN_KEY), &cooldown);
+}
+
+/// Returns whether recipient whitelisting is enabled.
+pub fn is_whitelist_enabled(env: &Env) -> bool {
+    env.storage()
+        .instance()
+        .get(&Symbol::new(env, WHITELIST_ENABLED_KEY))
+        .unwrap_or(false)
+}
+
+/// Enables or disables recipient whitelisting.
+pub fn set_whitelist_enabled(env: &Env, enabled: bool) {
+    env.storage()
+        .instance()
+        .set(&Symbol::new(env, WHITELIST_ENABLED_KEY), &enabled);
+}
+
+fn whitelist_key(env: &Env, recipient: &Address) -> (Symbol, Address) {
+    (Symbol::new(env, "wl"), recipient.clone())
+}
+
+/// Returns whether a recipient is whitelisted.
+pub fn is_whitelisted(env: &Env, recipient: &Address) -> bool {
+    env.storage().persistent().get(&whitelist_key(env, recipient)).unwrap_or(false)
+}
+
+/// Adds a recipient to the whitelist.
+pub fn add_to_whitelist(env: &Env, recipient: &Address) {
+    env.storage().persistent().set(&whitelist_key(env, recipient), &true);
+}
+
+/// Removes a recipient from the whitelist.
+pub fn remove_from_whitelist(env: &Env, recipient: &Address) {
+    env.storage().persistent().remove(&whitelist_key(env, recipient));
 }
 
 fn sender_limit_key(env: &Env, sender: &Address) -> (Symbol, Address) {

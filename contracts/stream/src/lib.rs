@@ -32,7 +32,7 @@ mod integration_tests;
 #[cfg(test)]
 mod testnet_integration_tests;
 
-use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String, Vec, Symbol, IntoVal};
+use soroban_sdk::{contract, contractimpl, token, Address, Bytes, BytesN, Env, String, Vec, Symbol, IntoVal};
 use storage::{
     append_audit_entry, check_admin, derive_stream_id, effective_sender_limit, get_global_stream_at,
     get_global_stream_count, get_ids_by_recipient, get_ids_by_sender, get_protocol_fee,
@@ -43,6 +43,15 @@ use storage::{
     set_sender_limit, set_treasury, stream_exists, unindex_by_recipient, unindex_by_sender,
     write_admin, write_min_duration, write_version, set_delegate, get_delegate, remove_delegate,
     read_pending_fee_proposal, write_pending_fee_proposal, clear_pending_fee_proposal,
+    add_to_whitelist, check_admin, derive_stream_id, effective_sender_limit, get_global_stream_at,
+    get_global_stream_count, get_ids_by_recipient, get_ids_by_sender, get_protocol_fee,
+    get_sender_stream_count, get_treasury, get_withdrawal_cooldown, index_by_recipient, index_by_sender,
+    index_global_stream, is_paused, is_whitelist_enabled, is_whitelisted, load_stream, mark_nonce_used,
+    nonce_used, read_admin, read_min_duration, read_version, remove_from_whitelist, remove_stream,
+    save_stream, set_max_streams_per_sender, set_paused, set_protocol_fee, set_sender_limit,
+    set_treasury, set_whitelist_enabled, set_withdrawal_cooldown, stream_exists,
+    unindex_by_recipient, unindex_by_sender, write_admin, write_min_duration, write_version,
+    set_delegate, get_delegate, remove_delegate, read_pending_fee_proposal, write_pending_fee_proposal, clear_pending_fee_proposal,
 };
 
 fn checked_flow_amount(flow_rate: i128, elapsed: u64) -> Result<i128, StreamError> {
@@ -231,6 +240,7 @@ impl SoroStreamContract {
         nonce: u64,
         auto_renew: bool,
         lock_until: u64,
+        metadata: Bytes,
     ) -> Result<u64, StreamError> {
         sender.require_auth();
 
@@ -245,6 +255,12 @@ impl SoroStreamContract {
         }
         if cliff_seconds >= duration_seconds {
             return Err(StreamError::InvalidCliff);
+        }
+        if metadata.len() > 64 {
+            return Err(StreamError::MetadataTooLong);
+        }
+        if is_whitelist_enabled(&env) && !is_whitelisted(&env, &recipient) {
+            return Err(StreamError::RecipientNotWhitelisted);
         }
 
         let min_dur = read_min_duration(&env);
@@ -301,6 +317,7 @@ impl SoroStreamContract {
             auto_renew,
             last_pause_time: 0,
             total_withdrawn: 0,
+            metadata: metadata.clone(),
         };
 
         save_stream(&env, &stream);
@@ -327,6 +344,67 @@ impl SoroStreamContract {
         write_min_duration(&env, seconds);
     }
 
+    /// Sets the global withdrawal cooldown in seconds.
+    pub fn set_withdrawal_cooldown(env: Env, admin: Address, cooldown_seconds: u64) -> Result<(), StreamError> {
+        check_admin(&env);
+        admin.require_auth();
+        set_withdrawal_cooldown(&env, cooldown_seconds);
+        Ok(())
+    }
+
+    /// Enables or disables recipient whitelisting.
+    pub fn set_whitelist_enabled(env: Env, admin: Address, enabled: bool) -> Result<(), StreamError> {
+        check_admin(&env);
+        admin.require_auth();
+        set_whitelist_enabled(&env, enabled);
+        Ok(())
+    }
+
+    /// Adds a recipient to the whitelist.
+    pub fn add_to_whitelist(env: Env, admin: Address, recipient: Address) -> Result<(), StreamError> {
+        check_admin(&env);
+        admin.require_auth();
+        add_to_whitelist(&env, &recipient);
+        Ok(())
+    }
+
+    /// Removes a recipient from the whitelist.
+    pub fn remove_from_whitelist(env: Env, admin: Address, recipient: Address) -> Result<(), StreamError> {
+        check_admin(&env);
+        admin.require_auth();
+        remove_from_whitelist(&env, &recipient);
+        Ok(())
+    }
+
+    /// Updates the metadata blob attached to a stream.
+    pub fn update_metadata(env: Env, sender: Address, stream_id: u64, metadata: Bytes) -> Result<(), StreamError> {
+        sender.require_auth();
+        let mut stream = load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)?;
+        if stream.sender != sender {
+            return Err(StreamError::NotSender);
+        }
+        if metadata.len() > 64 {
+            return Err(StreamError::MetadataTooLong);
+        }
+        stream.metadata = metadata.clone();
+        save_stream(&env, &stream);
+        events::metadata_updated(&env, stream_id, &metadata);
+        Ok(())
+    }
+
+    /// Cancels auto-renewal for an existing stream.
+    pub fn cancel_auto_renew(env: Env, sender: Address, stream_id: u64) -> Result<(), StreamError> {
+        sender.require_auth();
+        let mut stream = load_stream(&env, stream_id).ok_or(StreamError::StreamNotFound)?;
+        if stream.sender != sender {
+            return Err(StreamError::NotSender);
+        }
+        stream.auto_renew = false;
+        save_stream(&env, &stream);
+        events::auto_renew_cancelled(&env, stream_id);
+        Ok(())
+    }
+
     /// Allows the recipient to withdraw all tokens earned since last withdrawal.
     pub fn withdraw(env: Env, stream_id: u64, recipient: Address) -> Result<(), StreamError> {
         if is_paused(&env) {
@@ -350,6 +428,11 @@ impl SoroStreamContract {
         };
         if now < stream.lock_until {
             return Err(StreamError::StreamLocked);
+        }
+
+        let cooldown = get_withdrawal_cooldown(&env);
+        if cooldown > 0 && now < stream.last_withdraw_time.saturating_add(cooldown) {
+            return Err(StreamError::WithdrawalCooldownActive);
         }
 
         let effective_now = now.min(stream.end_time);
@@ -709,6 +792,7 @@ impl SoroStreamContract {
             auto_renew: stream.auto_renew,
             last_pause_time: 0,
             total_withdrawn: 0,
+            metadata: stream.metadata.clone(),
         };
 
         save_stream(&env, &new_stream);
@@ -1057,6 +1141,7 @@ impl SoroStreamContract {
                 auto_renew,
                 last_pause_time: 0,
                 total_withdrawn: 0,
+                metadata: Bytes::new(&env),
             };
 
             save_stream(&env, &stream);
@@ -1435,6 +1520,7 @@ impl SoroStreamInterface for SoroStreamContract {
         nonce: u64,
         auto_renew: bool,
         lock_until: u64,
+        metadata: Bytes,
     ) -> Result<u64, StreamError> {
         Self::create_stream(
             env,
@@ -1447,7 +1533,32 @@ impl SoroStreamInterface for SoroStreamContract {
             nonce,
             auto_renew,
             lock_until,
+            metadata,
         )
+    }
+
+    fn set_withdrawal_cooldown(env: Env, admin: Address, cooldown_seconds: u64) -> Result<(), StreamError> {
+        Self::set_withdrawal_cooldown(env, admin, cooldown_seconds)
+    }
+
+    fn set_whitelist_enabled(env: Env, admin: Address, enabled: bool) -> Result<(), StreamError> {
+        Self::set_whitelist_enabled(env, admin, enabled)
+    }
+
+    fn add_to_whitelist(env: Env, admin: Address, recipient: Address) -> Result<(), StreamError> {
+        Self::add_to_whitelist(env, admin, recipient)
+    }
+
+    fn remove_from_whitelist(env: Env, admin: Address, recipient: Address) -> Result<(), StreamError> {
+        Self::remove_from_whitelist(env, admin, recipient)
+    }
+
+    fn update_metadata(env: Env, sender: Address, stream_id: u64, metadata: Bytes) -> Result<(), StreamError> {
+        Self::update_metadata(env, sender, stream_id, metadata)
+    }
+
+    fn cancel_auto_renew(env: Env, sender: Address, stream_id: u64) -> Result<(), StreamError> {
+        Self::cancel_auto_renew(env, sender, stream_id)
     }
 
     fn withdraw(env: Env, stream_id: u64, recipient: Address) -> Result<(), StreamError> {
