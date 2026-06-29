@@ -1957,3 +1957,51 @@ fn test_interface_is_participant() {
     let other = Address::generate(&t.env);
     assert!(!c.is_participant(&stream_id, &other));
 }
+
+/// #188 – Recipient can withdraw correctly after a top_up, covering both partial
+/// and full withdrawal scenarios.
+#[test]
+fn test_withdraw_after_top_up() {
+    let t = setup();
+    let c = client(&t);
+    t.env.ledger().set_timestamp(0);
+
+    // Create stream: 100_000 tokens over 1000 s → flow_rate = 100/s
+    let stream_id = c.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_id,
+        &100_000,
+        &1000,
+        &0,
+        &0u64,
+        &false,
+        &0u64,
+        &Bytes::new(&t.env),
+    );
+
+    // Top-up 50_000 tokens → adds 500 s, deposit = 150_000, end_time = 1500
+    StellarAssetClient::new(&t.env, &t.token_id).mint(&t.sender, &50_000);
+    c.top_up(&stream_id, &t.sender, &t.token_id, &50_000);
+    let stream = c.get_stream(&stream_id);
+    assert_eq!(stream.deposit, 150_000);
+    assert_eq!(stream.end_time, 1500);
+
+    // Advance to t=600, partial withdraw: 600 s × 100 = 60_000
+    t.env.ledger().set_timestamp(600);
+    c.withdraw(&stream_id, &t.recipient);
+    let bal = TokenClient::new(&t.env, &t.token_id).balance(&t.recipient);
+    assert_eq!(bal, 60_000);
+
+    let stream = c.get_stream(&stream_id);
+    assert_eq!(stream.total_withdrawn, 60_000);
+
+    // Advance to end (t=1500), full withdrawal of remaining 90_000
+    t.env.ledger().set_timestamp(1500);
+    c.withdraw(&stream_id, &t.recipient);
+    let bal = TokenClient::new(&t.env, &t.token_id).balance(&t.recipient);
+    assert_eq!(bal, 150_000);
+
+    // Stream should be removed after full withdrawal
+    assert!(c.try_get_stream(&stream_id).is_err());
+}

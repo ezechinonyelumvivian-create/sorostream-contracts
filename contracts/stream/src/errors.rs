@@ -35,4 +35,5 @@ pub enum StreamError {
     WithdrawalCooldownActive = 25,
     RecipientNotWhitelisted = 26,
     MetadataTooLong = 27,
+    DuplicateStreamId = 28,
 }

@@ -428,15 +428,11 @@ impl SoroStreamContract {
         if stream.recipient != recipient {
             return Err(StreamError::NotRecipient);
         }
-        if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
+        if stream.status != StreamStatus::Active {
             return Err(StreamError::StreamNotActive);
         }
 
-        let now = if stream.status == StreamStatus::Paused {
-            stream.last_pause_time
-        } else {
-            env.ledger().timestamp()
-        };
+        let now = env.ledger().timestamp();
         if now < stream.lock_until {
             return Err(StreamError::StreamLocked);
         }
@@ -1188,27 +1184,43 @@ impl SoroStreamContract {
 
         let mut stream_ids = Vec::new(&env);
 
-        for i in 0..recipients.len().min(amounts.len()) {
+        // Pre-pass: compute all stream IDs and detect duplicates before writing any state.
+        let n = recipients.len().min(amounts.len());
+        let mut batch_ids: Vec<u64> = Vec::new(&env);
+        for i in 0..n {
             let recipient = recipients.get_unchecked(i);
             let amount = amounts.get_unchecked(i);
-            let token = tokens.get_unchecked(i);
-            
             if amount <= 0 {
                 return Err(StreamError::ZeroAmount);
             }
-
             let flow_rate = amount / duration_seconds as i128;
             if flow_rate == 0 {
                 return Err(StreamError::ZeroFlowRate);
             }
-            
+            let stream_id = derive_stream_id(&env, &sender, &recipient, now, i as u64);
+            if stream_exists(&env, stream_id) {
+                return Err(StreamError::DuplicateStreamId);
+            }
+            for j in 0..batch_ids.len() {
+                if batch_ids.get_unchecked(j) == stream_id {
+                    return Err(StreamError::DuplicateStreamId);
+                }
+            }
+            batch_ids.push_back(stream_id);
+        }
+
+        for i in 0..n {
+            let recipient = recipients.get_unchecked(i);
+            let amount = amounts.get_unchecked(i);
+            let token = tokens.get_unchecked(i);
+            let flow_rate = amount / duration_seconds as i128;
+            let stream_id = batch_ids.get_unchecked(i);
+
             token::Client::new(&env, &token).transfer(
                 &sender,
                 &env.current_contract_address(),
                 &amount,
             );
-            
-            let stream_id = derive_stream_id(&env, &sender, &recipient, now, i as u64);
 
             let stream = Stream {
                 id: stream_id,
@@ -1263,15 +1275,11 @@ impl SoroStreamContract {
             if stream.recipient != recipient {
                 return Err(StreamError::NotRecipient);
             }
-            if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
+            if stream.status != StreamStatus::Active {
                 return Err(StreamError::StreamNotActive);
             }
 
-            let now = if stream.status == StreamStatus::Paused {
-                stream.last_pause_time
-            } else {
-                env.ledger().timestamp()
-            };
+            let now = env.ledger().timestamp();
 
             if now < stream.lock_until {
                 return Err(StreamError::StreamLocked);
